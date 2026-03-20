@@ -1,0 +1,43 @@
+import orderModel from "../models/orderModel.js";
+
+// Place order
+export const placeOrder = async (req, res) => {
+  try {
+    const { items, totalAmount, address, paymentMethod } = req.body;
+    if (!items || !totalAmount) return res.json({ success: false, message: "Items required" });
+
+    const order = await orderModel.create({
+      user: req.user.id,
+      items,
+      totalAmount,
+      address,
+      paymentMethod,
+      status: "Pending",
+      createdAt: Date.now(),
+    });
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+};
+
+// Get logged-in user's orders
+export const getMyOrders = async (req, res) => {
+  try {
+    const orders = await orderModel.find({ user: req.user.id }).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+};
+
+// Get all orders (Admin)
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await orderModel.find().sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+};
