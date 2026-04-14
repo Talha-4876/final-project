@@ -8,8 +8,8 @@ import {
 } from "react-router-dom";
 
 /* ================= CONTEXT ================= */
-import { CartProvider } from "./context/CartContext";
-import { BookingProvider } from "./context/BookingContext";
+import CartProvider from "./context/CartContext";
+import BookingProvider from "./context/BookingContext";
 import { SearchProvider } from "./context/SearchContext";
 
 /* ================= COMPONENTS ================= */
@@ -33,7 +33,6 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Tables from "./pages/Tables";
 import TableBooking from "./pages/TableBooking";
-
 import Profile from "./pages/Profile";
 
 /* ================= AUTH ================= */
@@ -44,7 +43,7 @@ import { Toaster } from "react-hot-toast";
 
 /* ================= PROTECTED ROUTE ================= */
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("userToken"); // use same token as CartContext/BookingContext
   if (!token) return <Navigate to="/signup" replace />;
   return children;
 };
@@ -173,7 +172,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-             
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
@@ -183,13 +181,13 @@ function App() {
               onClose={() => setShowModal(false)}
               initialIsForgot={modalIsForgot}
             />
-<Chatbot />
+
+            <Chatbot />
+
             {/* Footer */}
             <Footer />
 
-            
-
-            {/* ✅ Toaster for booking notifications */}
+            {/* Toaster for booking notifications */}
             <Toaster position="top-right" reverseOrder={false} />
           </Router>
         </SearchProvider>
@@ -199,8 +197,6 @@ function App() {
 }
 
 export default App;
-
-
 
 
 

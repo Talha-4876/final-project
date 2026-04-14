@@ -1,18 +1,22 @@
+// src/components/GetInTouch.jsx
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUser, FaEnvelope, FaPhoneAlt } from "react-icons/fa";
 
 const GetInTouch = () => {
-  const [status, setStatus] = useState(""); // success / error message
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus(""); // reset status
+    setStatus({ type: "", message: "" });
+    setLoading(true);
+
     const form = e.target;
-    const name = form.name.value;
-    const email = form.email.value;
-    const phone = form.phone.value;
-    const message = form.message.value;
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const phone = form.phone.value.trim();
+    const message = form.message.value.trim();
 
     try {
       const res = await fetch("http://localhost:3200/api/contact", {
@@ -23,15 +27,17 @@ const GetInTouch = () => {
 
       const data = await res.json();
 
-      if (res.ok) {
-        setStatus("success");
+      if (res.ok && data.success) {
+        setStatus({ type: "success", message: data.message });
         form.reset();
       } else {
-        setStatus("error");
+        setStatus({ type: "error", message: data.message || "Something went wrong" });
       }
     } catch (err) {
       console.error(err);
-      setStatus("error");
+      setStatus({ type: "error", message: "Server error. Try again later." });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -52,10 +58,9 @@ const GetInTouch = () => {
             width="100%"
             height="100%"
             style={{ border: 0 }}
-            allowFullScreen=""
             loading="lazy"
             className="rounded-xl"
-          ></iframe>
+          />
         </motion.div>
 
         {/* Contact Form */}
@@ -70,15 +75,15 @@ const GetInTouch = () => {
             Get in Touch
           </h2>
 
-          {/* Status Messages */}
-          {status === "success" && (
-            <div className="mb-4 p-3 text-green-800 bg-green-100 rounded-lg">
-              Your message has been sent successfully! Admin will contact you soon.
-            </div>
-          )}
-          {status === "error" && (
-            <div className="mb-4 p-3 text-red-800 bg-red-100 rounded-lg">
-              Something went wrong. Please try again later.
+          {status.type && (
+            <div
+              className={`mb-4 p-3 rounded-lg ${
+                status.type === "success"
+                  ? "text-green-800 bg-green-100"
+                  : "text-red-800 bg-red-100"
+              }`}
+            >
+              {status.type === "success" ? "✅" : "❌"} {status.message}
             </div>
           )}
 
@@ -93,6 +98,7 @@ const GetInTouch = () => {
                 required
               />
             </div>
+
             <div className="relative">
               <FaEnvelope className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
               <input
@@ -103,6 +109,7 @@ const GetInTouch = () => {
                 required
               />
             </div>
+
             <div className="relative">
               <FaPhoneAlt className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
               <input
@@ -113,18 +120,25 @@ const GetInTouch = () => {
                 required
               />
             </div>
+
             <div className="relative">
               <textarea
                 name="message"
                 placeholder="Your Message (optional)"
                 className="w-full border border-gray-300 rounded-lg px-4 py-4 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              ></textarea>
+              />
             </div>
+
             <button
               type="submit"
-              className="bg-orange-500 hover:bg-orange-300 text-white font-semibold px-4 py-2 rounded-lg transition w-auto max-w-[250px] mx-auto block text-center"
+              disabled={loading}
+              className={`text-white font-semibold px-4 py-3 rounded-lg transition w-full max-w-[250px] mx-auto block text-center ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-orange-500 hover:bg-orange-400 cursor-pointer"
+              }`}
             >
-              Contact Now
+              {loading ? "Sending..." : "Contact Now"}
             </button>
           </form>
         </motion.div>

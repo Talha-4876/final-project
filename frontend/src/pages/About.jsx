@@ -156,8 +156,8 @@ const About = () => {
           <video ref={previewRef} src={aboutVideo} className="hidden" muted />
 
           {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40" onClick={togglePlay}>
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center text-orange-500 text-3xl md:text-4xl">
+            <div className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/40" onClick={togglePlay}>
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center cursor-pointer text-orange-500 text-3xl md:text-4xl">
                 ▶
               </div>
             </div>
@@ -196,26 +196,26 @@ const About = () => {
 
               <div className="flex items-center justify-between mt-2 flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                  <button onClick={togglePlay} className="text-white text-xl">{isPlaying ? "❚❚" : "▶"}</button>
-                  <button onClick={() => skip(-10)} className="text-white">⏪</button>
-                  <button onClick={() => skip(10)} className="text-white">⏩</button>
+                  <button onClick={togglePlay} className="text-white text-xl  cursor-pointer">{isPlaying ? "❚❚" : "▶"}</button>
+                  <button onClick={() => skip(-10)} className="text-white  cursor-pointer">⏪</button>
+                  <button onClick={() => skip(10)} className="text-white  cursor-pointer">⏩</button>
                 </div>
 
-                <span className="text-white text-sm">{formatTime(videoRef.current?.currentTime || 0)} / {formatTime(duration)}</span>
+                <span className="text-white text-sm  cursor-pointer">{formatTime(videoRef.current?.currentTime || 0)} / {formatTime(duration)}</span>
 
                 <div className="flex items-center gap-2">
-                  <button onClick={toggleMute} className="text-white">{muted ? "🔇" : "🔊"}</button>
-                  <input type="range" min="0" max="1" step="0.05" value={volume} onChange={changeVolume} className="w-16 md:w-24 accent-red-600" />
+                  <button onClick={toggleMute} className="text-white  cursor-pointer">{muted ? "🔇" : "🔊"}</button>
+                  <input type="range" min="0" max="1" step="0.05" value={volume} onChange={changeVolume} className="w-16 md:w-24 accent-red-600  cursor-pointer" />
                 </div>
 
-                <select value={speed} onChange={changeSpeed} className="bg-black text-white text-sm">
+                <select value={speed} onChange={changeSpeed} className="bg-black text-white text-sm  cursor-pointer">
                   <option value="0.5">0.5x</option>
                   <option value="1">1x</option>
                   <option value="1.5">1.5x</option>
                   <option value="2">2x</option>
                 </select>
 
-                <button onClick={toggleFullscreen} className="text-white text-lg">⛶</button>
+                <button onClick={toggleFullscreen} className="text-white text-lg  cursor-pointer">⛶</button>
               </div>
             </motion.div>
           )}
@@ -223,7 +223,7 @@ const About = () => {
 
         {/* TEXT */}
         <div className="text-center md:text-left ml-4 md:ml-10 translate-x-2 md:translate-x-6">
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-6  cursor-pointer">
             <span className="text-black">About </span>
             <span className="text-orange-500">Bite Boss</span>
           </h2>

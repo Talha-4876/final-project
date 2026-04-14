@@ -3,16 +3,24 @@ import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 
-import Login from "./Components/Login";
+import Login from "./Components/AdminLogin";
 import DashboardLayout from "./pages/Dashboard"; 
 import AddMenu from "./pages/AddMenu";
 import UpdateMenu from "./pages/UpdateMenu"; // ✅ Added
 import ListMenu from "./pages/ListMenu";
 import AdminTable from "./pages/AdminTable";
 import AdminReviews from "./pages/AdminReviews";
+import AdminContacts from "./pages/AdminContacts"; // ✅ ADD THIS
 
 const App = () => {
-  const [token, setToken] = useState(localStorage.getItem("adminToken") || "");
+  const [token, setToken] = useState("");
+
+useEffect(() => {
+  const storedToken = localStorage.getItem("adminToken");
+  if (storedToken) {
+    setToken(storedToken);
+  }
+}, []);
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -44,6 +52,8 @@ const App = () => {
             <Route path="update/:id" element={<UpdateMenu />} /> {/* ✅ Update route */}
             <Route path="table" element={<AdminTable />} />
             <Route path="reviews" element={<AdminReviews />} />
+ <Route path="contacts" element={<AdminContacts />} />
+
           </Route>
         )}
 

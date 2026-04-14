@@ -1,90 +1,88 @@
-// frontend/src/Components/AdminLogin.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { backendUrl } from "../App";
-import { FaLock, FaEye, FaEyeSlash, FaEnvelope } from "react-icons/fa";
+import { Eye, EyeOff } from "lucide-react";
+import { backendUrl } from "../config";
 
 const AdminLogin = ({ setToken }) => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const res = await axios.post(`${backendUrl}/api/auth/admin-login`, formData);
+      const res = await axios.post(`${backendUrl}/api/admin/login`, {
+        email,
+        password,
+      });
 
-      // Save token
-      localStorage.setItem("token", res.data.token);
-      setToken(res.data.token);
+      if (res.data.success) {
+        // ✅ Save token
+        localStorage.setItem("adminToken", res.data.token);
+        localStorage.setItem("adminData", JSON.stringify(res.data.admin));
 
-      toast.success("Admin login successful!");
-      navigate("/"); // redirect to dashboard
+        // ✅ Update state (no reload needed)
+        if (setToken) setToken(res.data.token);
+
+        toast.success("Login successful");
+
+        // ✅ Redirect
+        navigate("/admin/dashboard");
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Admin login failed");
-    } finally {
-      setLoading(false);
+      toast.error(err.response?.data?.message || "Login failed");
     }
   };
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 to-white">
-      <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
-        <h2 className="text-3xl font-bold text-center text-orange-500 mb-6">Admin Login</h2>
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-xl shadow-md w-[320px]"
+      >
+        <h2 className="text-2xl font-semibold mb-4 text-center">
+          Admin Login
+        </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
-          <div className="relative">
-            <FaEnvelope className="absolute left-3 top-4 text-gray-400" />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full pl-10 pr-4 py-3 border rounded-xl"
-            />
-          </div>
+        {/* Email */}
+        <input
+          type="email"
+          placeholder="Email"
+          className="border p-2 w-full mb-3 rounded"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-          {/* Password */}
-          <div className="relative">
-            <FaLock className="absolute left-3 top-4 text-gray-400" />
-            <input
-              type={showPass ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full pl-10 pr-10 py-3 border rounded-xl"
-            />
-            <div
-              className="absolute right-3 top-4 cursor-pointer"
-              onClick={() => setShowPass(!showPass)}
-            >
-              {showPass ? <FaEyeSlash /> : <FaEye />}
-            </div>
-          </div>
+        {/* Password with Eye Icon */}
+        <div className="relative mb-3">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            className="border p-2 w-full pr-10 rounded"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-orange-400 to-pink-500 text-white py-3 rounded-xl font-bold hover:scale-105 hover:shadow-lg transition"
+          <span
+            className="absolute right-3 top-2.5 cursor-pointer text-gray-600"
+            onClick={() => setShowPassword(!showPassword)}
           >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-      </div>
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </span>
+        </div>
+
+        {/* Button */}
+        <button className="bg-black text-white py-2 w-full rounded hover:bg-gray-800 transition">
+          Login
+        </button>
+      </form>
     </div>
   );
 };

@@ -152,6 +152,10 @@ import food115 from "./juice10.jpeg";
 // HOW WORK
 import work from "./work.mp4";
 
+// Randomly raestaurant video
+import restaurant from "./res.mp4";
+//  table side video
+import tablesideVideo from "./table.mp4";
 // ================= TABLE IMAGES =================
 import table1 from "./T1.jpg";
 import table2 from "./T2.jpg";
@@ -741,4 +745,10 @@ export const cards = [
 
 export const logos = {
   main: logo,
+};
+export const assets = {
+  restaurant,
+};
+export const tableside = {
+  video: tablesideVideo
 };

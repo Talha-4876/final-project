@@ -27,7 +27,7 @@ const Work = () => {
   const workVideo = works[0].video;
 
   return (
-    <section className="py-16 bg-white overflow-hidden">
+    <section className="py-16 bg-white overflow-hidden  cursor-pointer">
       <div className="max-w-6xl mx-auto px-4">
 
         {/* Heading */}
@@ -96,7 +96,7 @@ const Work = () => {
 
      {/* RIGHT VIDEO (OVERLAP EFFECT) */}
 <motion.div
-  className="relative z-10 md:w-1/2 flex justify-center mt-10 md:mt-0 md:-ml-28"
+  className="relative  cursor-pointer z-10 md:w-1/2 flex justify-center mt-10 md:mt-0 md:-ml-28"
   initial={{ opacity: 0, scale: 0.8 }}
   whileInView={{ opacity: 1, scale: 1 }}
   transition={{ duration: 0.6 }}

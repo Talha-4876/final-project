@@ -7,9 +7,9 @@ const Footer = () => {
 
   const quickLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Menu', path: '/' },
+    { name: 'Menu', path: '/menu' },
     { name: 'Tables', path: '/tables' },
-    { name: 'Contact Us', path: '/' },
+    { name: 'Contact Us', path: '/contact us' },
   ];
 
   return (
@@ -18,28 +18,28 @@ const Footer = () => {
         
         {/* Contact Info */}
         <div>
-          <h3 className="text-xl font-bold mb-4 text-orange-500">Bite Boss</h3>
+          <h3 className="text-xl font-bold mb-4 text-orange-500  cursor-pointer">Bite Boss</h3>
           <p>123 Main Street, Your City</p>
           <p>Email: info@biteboss.com</p>
           <p>Phone: +92 300 1234567</p>
 
-          <div className="flex gap-4 mt-4">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-orange-500"><FaFacebook size={20} /></a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-orange-500"><FaTwitter size={20} /></a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-orange-500"><FaInstagram size={20} /></a>
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-orange-500"><FaLinkedin size={20} /></a>
+          <div className="flex gap-4 mt-4 cursor-pointer">
+            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-orange-500 "><FaFacebook size={20} /></a>
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-orange-500 "><FaTwitter size={20} /></a>
+            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-orange-500 "><FaInstagram size={20} /></a>
+            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-orange-500 "><FaLinkedin size={20} /></a>
           </div>
         </div>
 
         {/* Quick Links */}
         <div>
-          <h3 className="text-xl font-bold mb-4 text-orange-500">Quick Links</h3>
-          <ul className="flex flex-col gap-2">
+          <h3 className="text-xl font-bold mb-4 text-orange-500  cursor-pointer">Quick Links</h3>
+          <ul className="flex flex-col gap-2 ">
             {quickLinks.map(link => (
               <li key={link.name}>
                 <button
                   onClick={() => navigate(link.path)}
-                  className="hover:text-orange-500 transition"
+                  className="hover:text-orange-500 transition  cursor-pointer"
                 >
                   {link.name}
                 </button>
@@ -50,7 +50,7 @@ const Footer = () => {
 
         {/* Newsletter / Placeholder */}
         <div>
-          <h3 className="text-xl font-bold mb-4 text-orange-500">Newsletter</h3>
+          <h3 className="text-xl font-bold mb-4 text-orange-500  cursor-pointer">Newsletter</h3>
           <p className="mb-4">Subscribe to get latest updates and offers.</p>
           <form className="flex gap-2">
             <input
@@ -60,7 +60,7 @@ const Footer = () => {
             />
             <button
               type="submit"
-              className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-r text-white font-semibold"
+              className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-r text-white font-semibold  cursor-pointer"
             >
               Subscribe
             </button>

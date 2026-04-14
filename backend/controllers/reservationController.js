@@ -1,128 +1,117 @@
-import reservationModel from "../models/reservationModels.js";
+import Reservation from "../models/reservationModels.js";
 
-// ================= CREATE RESERVATION =================
+// ================= CREATE =================
 export const createReservation = async (req, res) => {
   try {
-    const {
-      name,
-      phone,
-      email,
-      country,
-      city,
-      street,
-      tableSeats,
-      date,
-      time,
-      cartItems,
-      paymentMethod, // ✅ NEW
-    } = req.body;
+    const { user, table, cartItems, paymentMethod, totalAmount } = req.body;
 
-    if (!name || !phone || !tableSeats || !date || !time) {
+    // VALIDATION
+    if (
+      !user?.name ||
+      !user?.phone ||
+      !table?.seats ||
+      !table?.date ||
+      !table?.time
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Name, Phone, Table Seats, Date & Time are required",
+        message: "Please fill all required fields",
       });
     }
 
-    // ✅ TOTAL AMOUNT CALCULATE
-    const totalAmount = (cartItems || []).reduce(
-      (acc, item) => acc + item.price * item.quantity,
-      0
-    );
-
-    const reservation = new reservationModel({
-      user: {
-        name,
-        phone,
-        email,
-        country,
-        city,
-        street,
-      },
-      table: {
-        seats: tableSeats,
-        date,
-        time,
-      },
-      cartItems: cartItems || [],
-      paymentMethod: paymentMethod || "cash", // ✅ NEW
-      totalAmount, // ✅ NEW
+    // CHECK ALREADY BOOKED
+    const existing = await Reservation.findOne({
+      "table.date": table.date,
+      "table.time": table.time,
+      "table.seats": table.seats,
     });
 
-    await reservation.save();
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Table already booked",
+      });
+    }
+
+    const reservation = await Reservation.create({
+      user,
+      table,
+      cartItems,
+      paymentMethod,
+      totalAmount,
+    });
 
     res.status(201).json({
       success: true,
-      message: "Reservation created successfully",
       reservation,
     });
-  } catch (error) {
-    console.error("CREATE RESERVATION ERROR:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ================= GET ALL RESERVATIONS (ADMIN) =================
-export const getAllReservation = async (req, res) => {
-  try {
-    const reservations = await reservationModel
-      .find()
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      reservations,
+  } catch (err) {
+    console.error("CREATE ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Reservation failed",
     });
-  } catch (error) {
-    console.error("GET RESERVATIONS ERROR:", error);
-    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ================= DELETE RESERVATION =================
-export const deleteReservation = async (req, res) => {
+// ================= GET USER =================
+export const getUserReservations = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { email } = req.query;
 
-    const deleted = await reservationModel.findByIdAndDelete(id);
-
-    if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        message: "Reservation not found",
-      });
+    let query = {};
+    if (email) {
+      query["user.email"] = email;
     }
 
-    res.json({
-      success: true,
-      message: "Reservation deleted successfully",
+    const reservations = await Reservation.find(query).sort({
+      createdAt: -1,
     });
-  } catch (error) {
-    console.error("DELETE RESERVATION ERROR:", error);
-    res.status(500).json({ success: false, message: error.message });
+
+    res.json({ success: true, reservations });
+  } catch (err) {
+    res.status(500).json({ success: false });
   }
 };
 
-// ================= MARK AS PAID =================
+// ================= GET ALL =================
+export const getAllReservations = async (req, res) => {
+  try {
+    const reservations = await Reservation.find().sort({
+      createdAt: -1,
+    });
+
+    res.json({ success: true, reservations });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
+
+// ================= DELETE =================
+export const deleteReservation = async (req, res) => {
+  try {
+    await Reservation.findByIdAndDelete(req.params.id);
+
+    res.json({ success: true, message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
+
+// ================= MARK PAID =================
 export const markAsPaid = async (req, res) => {
   try {
-    const updated = await reservationModel.findByIdAndUpdate(
-      req.params.id,
-      { isPaid: true },
-      { new: true }
-    );
+    const reservation = await Reservation.findById(req.params.id);
 
-    if (!updated) {
+    if (!reservation) {
       return res.json({ success: false, message: "Not found" });
     }
 
-    res.json({
-      success: true,
-      message: "Payment marked as paid",
-      updated,
-    });
-  } catch (error) {
-    console.error("PAYMENT ERROR:", error);
-    res.status(500).json({ success: false, message: error.message });
+    reservation.isPaid = true;
+    await reservation.save();
+
+    res.json({ success: true, reservation });
+  } catch (err) {
+    res.status(500).json({ success: false });
   }
 };

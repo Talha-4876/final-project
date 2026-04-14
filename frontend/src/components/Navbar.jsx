@@ -265,7 +265,7 @@ className="text-gray-700 group-hover:text-orange-500"
 
 <button
 onClick={openAuth}
-className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full transition"
+className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full transition  cursor-pointer"
 >
 
 Sign Up

@@ -65,7 +65,7 @@ export default function Services() {
       </div>
 
       {/* Heading */}
-      <h1 className="text-5xl font-bold text-center mb-3">
+      <h1 className="text-5xl font-bold text-center mb-3  cursor-pointer">
         Our <span className="text-orange-500">Services</span>
       </h1>
 
@@ -110,7 +110,7 @@ export default function Services() {
           onMouseLeave={magneticLeave}
           onClick={prev}
           disabled={index === 0}
-          className={`absolute left-0 top-1/2 -translate-y-1/2 px-4 py-3 md:px-6 md:py-4 rounded-full shadow-lg transition
+          className={`absolute  cursor-pointer left-0 top-1/2 -translate-y-1/2 px-4 py-3 md:px-6 md:py-4 rounded-full shadow-lg transition
             ${index === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-orange-500 text-white hover:bg-orange-600"}`}
         >
           ←
@@ -121,7 +121,7 @@ export default function Services() {
           onMouseLeave={magneticLeave}
           onClick={next}
           disabled={index === services.length - 1}
-          className={`absolute right-0 top-1/2 -translate-y-1/2 px-4 py-3 md:px-6 md:py-4 rounded-full shadow-lg transition
+          className={`absolute  cursor-pointer right-0 top-1/2 -translate-y-1/2 px-4 py-3 md:px-6 md:py-4 rounded-full shadow-lg transition
             ${index === services.length - 1 ? "bg-gray-300 cursor-not-allowed" : "bg-orange-500 text-white hover:bg-orange-600"}`}
         >
           →

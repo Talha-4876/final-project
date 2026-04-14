@@ -95,7 +95,7 @@ const Menu = () => {
         ${
           selectedCategory === cat.slug
             ? "bg-orange-400 text-white scale-110 shadow-lg"
-            : "bg-gray-100 text-gray-700 hover:bg-orange-400 hover:text-white hover:scale-105"
+            : "bg-gray-100 text-gray-700 hover:bg-orange-400 hover:text-white hover:scale-105  cursor-pointer"
         }
       `}
     >
@@ -128,7 +128,7 @@ const Menu = () => {
         <div className="flex justify-center mt-10">
           <button
             onClick={() => setShowAll(true)}
-            className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition"
+            className="px-8 py-3  bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition"
           >
             View More
           </button>

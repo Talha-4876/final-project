@@ -90,7 +90,7 @@ const Hero = () => {
         </motion.div>
       ))}
 
-      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10 w-full z-20">
+      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10 w-full z-20  cursor-pointer">
 
         {/* Text */}
         <motion.div
@@ -110,7 +110,7 @@ const Hero = () => {
               textShadow: "2px 2px 15px rgba(255, 215, 0, 0.6)"
             }}
           >
-            <span className="text-yellow-500">Fast Food ka asli Boss</span> <br /> Bite Boss!
+            <span className="text-yellow-500 ">Fast Food ka asli Boss</span> <br /> Bite Boss!
           </motion.h2>
 
           <motion.p

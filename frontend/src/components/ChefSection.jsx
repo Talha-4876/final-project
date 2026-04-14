@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 const ChefSection = () => {
   return (
     <section className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6  cursor-pointer">
 
         {/* Heading */}
         <div className="text-center mb-14">

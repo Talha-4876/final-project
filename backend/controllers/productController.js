@@ -1,20 +1,21 @@
+// controllers/productController.js
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
-import cloudinary from "../config/cloudinary.js";
+import { cloudinary } from "../config/cloudinary.js"; // ✅ crash-free
 import fs from "fs";
 
 // List all products (PKR only)
 export const listProducts = async (req, res) => {
   try {
     const products = await Product.find();
-    res.json({ success: true, products }); // price is already in PKR
+    res.json({ success: true, products });
   } catch (err) {
-    console.error(err);
+    console.error("List products error:", err);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-// Add Product (PKR only)
+// Add Product
 export const addProduct = async (req, res) => {
   try {
     const { name, description, price, category } = req.body;
@@ -26,25 +27,25 @@ export const addProduct = async (req, res) => {
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, { folder: "menu" });
       imageUrl = result.secure_url;
-      fs.unlinkSync(req.file.path);
+      fs.unlinkSync(req.file.path); // remove temp file
     }
 
     const product = await Product.create({
       name,
       description,
-      price, // PKR directly
+      price,
       category,
       image: imageUrl,
     });
 
     res.json({ success: true, message: "Product added successfully", product });
   } catch (err) {
-    console.error(err);
+    console.error("Add product error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// Update Product (PKR only)
+// Update Product
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -59,7 +60,7 @@ export const updateProduct = async (req, res) => {
     // Update fields
     if (name) product.name = name;
     if (description) product.description = description;
-    if (price) product.price = price; // PKR only
+    if (price) product.price = price;
     if (category) product.category = category;
 
     if (req.file) {
@@ -71,7 +72,7 @@ export const updateProduct = async (req, res) => {
     await product.save();
     res.json({ success: true, message: "Product updated successfully", product });
   } catch (err) {
-    console.error(err);
+    console.error("Update product error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -83,7 +84,7 @@ export const deleteProduct = async (req, res) => {
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
     res.json({ success: true, message: "Product deleted successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Delete product error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -100,7 +101,7 @@ export const getProduct = async (req, res) => {
 
     res.json({ success: true, product });
   } catch (err) {
-    console.error(err);
+    console.error("Get product error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -124,7 +125,7 @@ export const addProductReview = async (req, res) => {
     await product.save();
     res.json({ success: true, message: "Review added", reviews: product.reviews });
   } catch (err) {
-    console.error(err);
+    console.error("Add review error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -137,7 +138,7 @@ export const getProductReviews = async (req, res) => {
 
     res.json({ success: true, reviews: product.reviews || [] });
   } catch (err) {
-    console.error(err);
+    console.error("Get reviews error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

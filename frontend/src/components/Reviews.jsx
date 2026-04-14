@@ -21,11 +21,11 @@ const Reviews = () => {
   return (
     <section
       id="reviews"
-      className="py-16 bg-gradient-to-b from-orange-50 to-white scroll-mt-24"
+      className="py-16 bg-gradient-to-b from-orange-50 to-white scroll-mt-24  cursor-pointer"
     >
       {/* Heading */}
       <motion.h2
-        className="text-4xl md:text-4xl font-bold text-center text-gray-700 mb-2"
+        className="text-4xl md:text-4xl font-bold text-center text-gray-700 mb-2 "
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}

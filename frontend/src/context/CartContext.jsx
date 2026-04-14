@@ -1,20 +1,18 @@
-// src/context/CartContext.jsx
 import React, { createContext, useState, useEffect } from "react";
 
+// Named export for context
 export const CartContext = createContext();
 
-export const CartProvider = ({ children }) => {
+const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [user, setUser] = useState(null);
 
   // Load cart and user from localStorage
   useEffect(() => {
-    // Load cart
     const stored = localStorage.getItem("cart");
     if (stored) setCartItems(JSON.parse(stored));
 
-    // Load user from token safely
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("userToken");
     if (token) {
       try {
         const base64Payload = token.split(".")[1];
@@ -34,7 +32,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product, userDetails = {}) => {
+  const addToCart = (product) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item._id === product._id);
       if (existing) {
@@ -44,7 +42,7 @@ export const CartProvider = ({ children }) => {
             : item
         );
       } else {
-        return [...prev, { ...product, quantity: 1, userDetails }];
+        return [...prev, { ...product, quantity: 1 }];
       }
     });
   };
@@ -74,3 +72,6 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
+
+// Default export for Provider (Vite Fast Refresh friendly)
+export default CartProvider;

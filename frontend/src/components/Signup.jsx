@@ -84,8 +84,8 @@ const Signup = () => {
   };
 
   return (
-    <section className="flex justify-center items-center min-h-[80vh] bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8">
+    <section className="flex justify-center items-center min-h-[80vh] bg-gray-50 px-4 ">
+      <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8  ">
 
         {/* ================= TOGGLE LOGIN / SIGNUP ================= */}
         {!isForgot && (
@@ -93,7 +93,7 @@ const Signup = () => {
             <button
               onClick={() => { setIsLogin(true); setIsForgot(false); }}
               className={`px-6 py-2 rounded font-semibold transition-colors ${
-                isLogin ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700"
+                isLogin ? "bg-orange-500 text-white " : "bg-gray-200 text-gray-700 cursor-pointer"
               }`}
             >
               Login
@@ -101,8 +101,8 @@ const Signup = () => {
 
             <button
               onClick={() => { setIsLogin(false); setIsForgot(false); }}
-              className={`px-6 py-2 rounded font-semibold transition-colors ${
-                !isLogin ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700"
+              className={`px-6 py-2  rounded font-semibold transition-colors  ${
+                !isLogin ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700  cursor-pointer"
               }`}
             >
               Sign Up
