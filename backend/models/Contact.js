@@ -1,17 +1,35 @@
-// backend/models/Contact.js
 import mongoose from "mongoose";
 
 const contactSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    phone: { type: String, required: true },
-    message: { type: String },
-    ip: { type: String },
-    location: { type: String },
+    name: String,
+    email: String,
+    phone: String,
+    message: String,
+
+    // 📩 read/unread system
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
+
+    // 💬 Gmail-style conversation thread
+    replies: [
+      {
+        message: String,
+        from: {
+          type: String,
+          enum: ["admin", "user"],
+          default: "admin",
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
 
-const Contact = mongoose.model("Contact", contactSchema);
-export default Contact;
+export default mongoose.model("Contact", contactSchema);

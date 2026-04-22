@@ -3,10 +3,11 @@ import Delivery from "../models/Delivery.js";
 
 const router = express.Router();
 
-// Convert PKR to USD
-const PKR_TO_USD = 0.0057; // 1 PKR = 0.0057 USD (adjust as needed)
+const PKR_TO_USD = 0.0057;
 
-// Create a new delivery order
+// =========================
+// CREATE ORDER
+// =========================
 router.post("/create", async (req, res) => {
   try {
     const {
@@ -24,18 +25,20 @@ router.post("/create", async (req, res) => {
       deliveryCharge
     } = req.body;
 
-    // Validate required fields
     if (!name || !phone || !city || !address || !cartItems || cartItems.length === 0) {
       return res.status(400).json({ success: false, message: "Required fields missing" });
     }
 
-    // Convert prices to USD
     const cartUSD = cartItems.map(item => ({
       ...item,
       price: parseFloat((item.price * PKR_TO_USD).toFixed(2))
     }));
+
     const deliveryUSD = parseFloat((deliveryCharge * PKR_TO_USD).toFixed(2));
-    const totalUSD = parseFloat((cartUSD.reduce((acc, i) => acc + i.price * i.quantity, 0) + deliveryUSD).toFixed(2));
+
+    const totalUSD = parseFloat(
+      (cartUSD.reduce((acc, i) => acc + i.price * i.quantity, 0) + deliveryUSD).toFixed(2)
+    );
 
     const newDelivery = new Delivery({
       name,
@@ -51,14 +54,66 @@ router.post("/create", async (req, res) => {
       cartItems: cartUSD,
       deliveryCharge: deliveryUSD,
       totalAmount: totalUSD,
+      status: "Pending"
     });
 
     await newDelivery.save();
 
-    res.status(201).json({ success: true, message: "Delivery info saved successfully!", order: newDelivery });
+    res.status(201).json({
+      success: true,
+      message: "Order created successfully",
+      order: newDelivery
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
+// =========================
+// GET ALL ORDERS
+// =========================
+router.get("/all", async (req, res) => {
+  try {
+    const deliveries = await Delivery.find().sort({ createdAt: -1 });
+    res.json({ success: true, deliveries });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+
+// =========================
+// UPDATE STATUS
+// =========================
+router.put("/status/:id", async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const updated = await Delivery.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    res.json({ success: true, order: updated });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+
+// =========================
+// DELETE ORDER
+// =========================
+router.delete("/delete/:id", async (req, res) => {
+  try {
+    await Delivery.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false });
   }
 });
 

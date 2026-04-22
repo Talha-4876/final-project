@@ -19,7 +19,8 @@ import deliveryRoutes from "./routes/deliveryRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
-
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import chefRoutes  from "./routes/chefRoutes.js";
 // Middleware
 import authMiddleware from "./middleware/authMiddleware.js";
 import adminAuth from "./middleware/adminAuth.js";
@@ -53,6 +54,8 @@ app.use("/api/delivery", deliveryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);       // Chatbot route
 app.use("/api/contact", contactRoutes); // Mailer route
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/chefs", chefRoutes);
 
 // Admin: fetch all reviews
 app.get("/api/admin/reviews", authMiddleware, adminAuth, async (req, res) => {

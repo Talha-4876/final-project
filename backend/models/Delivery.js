@@ -7,23 +7,30 @@ const deliverySchema = new mongoose.Schema(
     email: { type: String },
     country: { type: String, default: "Pakistan" },
     city: { type: String, required: true },
-    street: { type: String, required: true }, // store address here
+    street: { type: String, required: true },
     apartment: { type: String },
     postalCode: { type: String },
     deliveryInstructions: { type: String },
     paymentMethod: { type: String, default: "cash" },
+
     cartItems: [
       {
         _id: String,
         name: String,
         quantity: Number,
-        price: Number, // USD
+        price: Number,
         image: String
-      },
+      }
     ],
-    deliveryCharge: { type: Number, default: 0 }, // USD
-    totalAmount: { type: Number, required: true }, // USD
-    status: { type: String, default: "pending" }, // pending, delivered, canceled
+
+    deliveryCharge: { type: Number, default: 0 },
+    totalAmount: { type: Number, required: true },
+
+    // ✅ FIXED
+    status: {
+      type: String,
+      default: "Pending"
+    }
   },
   { timestamps: true }
 );
