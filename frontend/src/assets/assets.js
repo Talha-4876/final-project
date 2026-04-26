@@ -614,16 +614,16 @@ export const products = [
 },
 
 
-{ id: 106, name: "Orange Juice", img: food106, price: 4.99, category: "juices" },
-  { id: 107, name: "Apple Juice", img: food116, price: 5.49, category: "juices" },
-  { id: 108, name: "Mango Juice", img: food108, price: 5.99, category: "juices" },
-  { id: 109, name: "Pineapple Juice", img: food109, price: 6.49, category: "juices" },
-  { id: 110, name: "Carrot Juice", img: food110, price: 4.99, category: "juices" },
-  { id: 111, name: "Mixed Fruit Juice", img: food111, price: 6.99, category: "juices" },
-  { id: 112, name: "Watermelon Juice", img: food112, price: 5.49, category: "juices" },
-  { id: 113, name: "Grapes Juice", img: food113, price: 5.99, category: "juices" },
-  { id: 114, name: "Pomegranate Juice", img: food114, price: 6.49, category: "juices" },
-  { id: 115, name: "Strawberry Juice", img: food115, price: 6.99, category: "juices" },
+{ id: 601, name: "Orange Juice", img: food106, price: 4.99, category: "juices" },
+{ id: 602, name: "Apple Juice", img: food116, price: 5.49, category: "juices" },
+{ id: 603, name: "Mango Juice", img: food108, price: 5.99, category: "juices" },
+{ id: 604, name: "Pineapple Juice", img: food109, price: 6.49, category: "juices" },
+{ id: 605, name: "Carrot Juice", img: food110, price: 4.99, category: "juices" },
+{ id: 606, name: "Mixed Fruit Juice", img: food111, price: 6.99, category: "juices" },
+{ id: 607, name: "Watermelon Juice", img: food112, price: 5.49, category: "juices" },
+{ id: 608, name: "Grapes Juice", img: food113, price: 5.99, category: "juices" },
+{ id: 609, name: "Pomegranate Juice", img: food114, price: 6.49, category: "juices" },
+{ id: 610, name: "Strawberry Juice", img: food115, price: 6.99, category: "juices" },
 
 ];
 

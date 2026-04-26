@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useMemo } from "react";
 import axios from "axios";
 import { backendUrl } from "../config";
 import ProductCard from "./ProductCard";
@@ -27,83 +27,107 @@ const Menu = () => {
   const [showAll, setShowAll] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(280);
 
-  // Fetch products from backend
+  // ================= FETCH PRODUCTS =================
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await axios.get(`${backendUrl}/api/product/list`);
-        if (res.data.success) setProducts(res.data.products);
+
+        if (res.data?.success && Array.isArray(res.data.products)) {
+          setProducts(res.data.products);
+        } else {
+          setProducts([]);
+        }
       } catch (err) {
         console.error("Failed to fetch products:", err);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchProducts();
   }, []);
 
-  // Fetch live USD → PKR rate
+  // ================= EXCHANGE RATE =================
   useEffect(() => {
     const fetchRate = async () => {
       try {
         const res = await axios.get("https://open.er-api.com/v6/latest/USD");
-        if (res.data?.rates?.PKR) setExchangeRate(res.data.rates.PKR);
+        if (res.data?.rates?.PKR) {
+          setExchangeRate(res.data.rates.PKR);
+        }
       } catch (err) {
         console.error("Failed to fetch exchange rate:", err);
       }
     };
+
     fetchRate();
   }, []);
 
-  // Filter products by category & search
-  const filteredProducts = products.filter((p) => {
-    const matchesCategory =
-      selectedCategory === "all" ||
-      p.category.toLowerCase() === selectedCategory.toLowerCase();
+  // ================= FILTER =================
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (!p) return false;
 
-    const matchesSearch =
-      !searchQuery ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const category = p.category?.toLowerCase?.() || "";
+      const name = p.name?.toLowerCase?.() || "";
+      const search = searchQuery?.toLowerCase?.() || "";
 
-    return matchesCategory && matchesSearch;
-  });
+      const matchesCategory =
+        selectedCategory === "all" || category === selectedCategory;
 
-  const visibleProducts = showAll ? filteredProducts : filteredProducts.slice(0, 8);
+      const matchesSearch =
+        !search || name.includes(search) || category.includes(search);
 
-  if (loading)
-    return <div className="text-center py-20 text-gray-500">Loading Menu...</div>;
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, selectedCategory, searchQuery]);
+
+  const visibleProducts = showAll
+    ? filteredProducts
+    : filteredProducts.slice(0, 8);
+
+  // ================= LOADING =================
+  if (loading) {
+    return (
+      <div className="text-center py-20 text-gray-500">
+        Loading Menu...
+      </div>
+    );
+  }
 
   return (
-    <section className="py-12 px-6 bg-gray-50 scroll-mt-24" id="menu">
-  {/* Category Buttons */}
-<div className="flex flex-wrap gap-4 justify-center mb-8">
-  {categories.map((cat) => (
-    <button
-      key={cat.id}
-      onClick={() => {
-        setSelectedCategory(cat.slug);
-        setShowAll(false); // reset "View More"
-      }}
-      className={`
-        relative
-        w-24 h-24 flex items-center justify-center
-        rounded-full
-        font-semibold text-sm
-        transition-all duration-300
-        shadow-md
-        ${
-          selectedCategory === cat.slug
-            ? "bg-orange-400 text-white scale-110 shadow-lg"
-            : "bg-gray-100 text-gray-700 hover:bg-orange-400 hover:text-white hover:scale-105  cursor-pointer"
-        }
-      `}
+    <section
+      className="py-12 px-6 bg-gray-50 scroll-mt-24"
+      id="menu"
     >
-      {cat.title}
-    </button>
-  ))}
-</div>
-      {/* Products Grid */}
+      {/* ================= CATEGORY ================= */}
+      <div className="flex flex-wrap gap-4 justify-center mb-8">
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => {
+              setSelectedCategory(cat.slug);
+              setShowAll(false);
+            }}
+            className={`
+              w-24 h-24 flex items-center justify-center
+              rounded-full font-semibold text-sm
+              transition-all duration-300 shadow-md
+              ${
+                selectedCategory === cat.slug
+                  ? "bg-orange-400 text-white scale-110 shadow-lg"
+                  : "bg-gray-100 text-gray-700 hover:bg-orange-400 hover:text-white hover:scale-105 cursor-pointer"
+              }
+            `}
+          >
+            {cat.title}
+          </button>
+        ))}
+      </div>
+
+      {/* ================= PRODUCTS ================= */}
       {filteredProducts.length === 0 ? (
         <div className="text-center text-gray-500 py-20">
           No products found.
@@ -123,12 +147,12 @@ const Menu = () => {
         </div>
       )}
 
-      {/* View More Button */}
+      {/* ================= VIEW MORE ================= */}
       {!showAll && filteredProducts.length > 8 && (
         <div className="flex justify-center mt-10">
           <button
             onClick={() => setShowAll(true)}
-            className="px-8 py-3  bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition"
+            className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition"
           >
             View More
           </button>

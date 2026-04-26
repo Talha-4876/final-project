@@ -13,7 +13,7 @@ import AdminContacts from "./pages/AdminContacts";
 import Deliveries from "./pages/Deliveries";
 import AdminInbox from "./pages/AdminInbox";
 import ChefManager from "./Components/ChefManager";
-
+import AdminSettings from "./pages/AdminSettings";
 const App = () => {
   const [token, setToken] = useState("");
 
@@ -64,6 +64,7 @@ const App = () => {
             <Route path="inbox"        element={<AdminInbox />} />
             <Route path="deliveries"   element={<Deliveries />} />
             <Route path="chefs"        element={<ChefManager />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
         )}
 

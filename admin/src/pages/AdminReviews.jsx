@@ -10,23 +10,30 @@ const AdminReviews = () => {
   const [search, setSearch] = useState("");
   const [ratingFilter, setRatingFilter] = useState("");
 
-  // ================= FETCH =================
-  const fetchReviews = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/reviews`);
-      if (res.data.success) {
-        setReviews(res.data.reviews);
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  /* ================= FETCH ================= */
+const fetchReviews = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
+    const res = await axios.get(
+      `${backendUrl}/api/reviews`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setReviews(res.data?.reviews || []);
+  } catch (err) {
+    console.log(err.message);
+  }
+};
   useEffect(() => {
     fetchReviews();
   }, []);
 
-  // ================= DELETE =================
+  /* ================= DELETE ================= */
   const deleteReview = async (id) => {
     if (!window.confirm("Delete this review?")) return;
 
@@ -35,81 +42,76 @@ const AdminReviews = () => {
         `${backendUrl}/api/reviews/${id}`
       );
 
-      if (res.data.success) {
-        setReviews(prev => prev.filter(r => r._id !== id));
+      if (res.data?.success) {
+        setReviews((prev) =>
+          prev.filter((r) => r._id !== id)
+        );
       }
+
     } catch (err) {
-      console.log(err);
+      console.log(err.message);
     }
   };
 
-  // ================= FILTER =================
+  /* ================= FILTER ================= */
   const filtered = reviews.filter((r) => {
-    const matchName = r.name
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
-
-    const matchRating = ratingFilter
-      ? r.rating === Number(ratingFilter)
-      : true;
-
-    return matchName && matchRating;
+    return (
+      r.name?.toLowerCase().includes(search.toLowerCase()) &&
+      (ratingFilter ? r.rating === Number(ratingFilter) : true)
+    );
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-6">
 
-      {/* ⭐ ANALYTICS */}
       <ReviewAnalytics />
       <AIReviewInsights />
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+      <h1 className="text-3xl font-bold mb-4">
+        ⭐ Admin Reviews
+      </h1>
 
-        <h1 className="text-3xl font-bold">
-          ⭐ Customer Reviews
-        </h1>
+      {/* FILTERS */}
+      <div className="flex gap-2 mb-6">
 
-        <div className="flex gap-2 flex-wrap">
+        <input
+          className="border p-2 rounded"
+          placeholder="Search name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-          <input
-            type="text"
-            placeholder="Search name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border p-2 rounded-lg"
-          />
+        <select
+          className="border p-2 rounded"
+          value={ratingFilter}
+          onChange={(e) => setRatingFilter(e.target.value)}
+        >
+          <option value="">All</option>
+          <option value="5">5★</option>
+          <option value="4">4★</option>
+          <option value="3">3★</option>
+          <option value="2">2★</option>
+          <option value="1">1★</option>
+        </select>
 
-          <select
-            value={ratingFilter}
-            onChange={(e) => setRatingFilter(e.target.value)}
-            className="border p-2 rounded-lg"
-          >
-            <option value="">All Ratings</option>
-            <option value="5">5 ★</option>
-            <option value="4">4 ★</option>
-            <option value="3">3 ★</option>
-            <option value="2">2 ★</option>
-            <option value="1">1 ★</option>
-          </select>
-
-        </div>
       </div>
 
-      {/* GRID */}
+      {/* REVIEWS */}
       <div className="grid md:grid-cols-2 gap-4">
 
         {filtered.map((r) => (
           <div
             key={r._id}
-            className="bg-white rounded-2xl shadow-md p-5 hover:shadow-xl transition"
+            className="bg-white p-5 rounded-xl shadow"
           >
 
-            {/* TOP */}
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between">
 
               <div>
-                <h2 className="font-bold text-lg">{r.name}</h2>
+                <h2 className="font-bold">
+                  {r.name || "No Name"}
+                </h2>
+
                 <p className="text-xs text-gray-500">
                   {dayjs(r.createdAt).format("DD MMM YYYY")}
                 </p>
@@ -117,7 +119,7 @@ const AdminReviews = () => {
 
               <button
                 onClick={() => deleteReview(r._id)}
-                className="text-red-500 text-sm hover:underline"
+                className="text-red-500"
               >
                 Delete
               </button>
@@ -125,29 +127,30 @@ const AdminReviews = () => {
             </div>
 
             {/* STARS */}
-            <div className="text-yellow-400 text-lg mt-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i}>
-                  {i < r.rating ? "★" : "☆"}
-                </span>
-              ))}
+            <div className="text-yellow-400 mt-2">
+              {"★".repeat(r.rating || 0) +
+                "☆".repeat(5 - (r.rating || 0))}
             </div>
 
-            {/* COMMENT */}
-            <p className="text-gray-700 mt-2">
-              {r.comment}
+            <p className="mt-2">
+              {r.comment || "No Comment"}
+            </p>
+
+            <p className="text-xs text-gray-400 mt-2">
+              ❤️ {r.likes || 0}
             </p>
 
           </div>
         ))}
+
       </div>
 
-      {/* EMPTY STATE */}
       {filtered.length === 0 && (
-        <div className="text-center mt-10 text-gray-500">
+        <p className="text-center mt-10 text-gray-500">
           No reviews found 😔
-        </div>
+        </p>
       )}
+
     </div>
   );
 };

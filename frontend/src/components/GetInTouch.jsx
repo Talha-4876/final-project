@@ -83,7 +83,7 @@ const GetInTouch = () => {
                   : "text-red-800 bg-red-100"
               }`}
             >
-              {status.type === "success" ? "✅" : "❌"} {status.message}
+              {status.type === "success" ? "Email Send Successfully! ✅" : "❌Error"} {status.message}
             </div>
           )}
 

@@ -1,61 +1,68 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
 
-const ProductCard = ({
-  product,
-  addToCart,
-  removeFromCart,
-  getQuantity,
-  exchangeRate,
-  onNavigate,
-}) => {
+const ProductCard = ({ product, addToCart, removeFromCart, getQuantity }) => {
+  const navigate = useNavigate();
   const quantity = getQuantity(product._id);
 
-  // Use live exchange rate
-  const priceInPkr = Math.round(product.price * exchangeRate);
-
   return (
-    <div className="bg-white rounded-3xl shadow-lg overflow-hidden hover:scale-105 transition flex flex-col">
-      <img
-        src={product.image}
-        alt={product.name}
-        onClick={onNavigate ? () => onNavigate(product._id) : null}
-        className="h-56 w-full object-cover cursor-pointer"
-      />
+    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden group">
 
-      <div className="p-5 flex flex-col flex-1">
+      {/* IMAGE */}
+      <div className="overflow-hidden">
+        <img
+          src={product.image}
+          className="h-56 w-full object-cover group-hover:scale-110 transition duration-300 cursor-pointer"
+          onClick={() => navigate(`/product/${product._id}`)}
+        />
+      </div>
+
+      {/* CONTENT */}
+      <div className="p-4">
+
         <h3
-          onClick={onNavigate ? () => onNavigate(product._id) : null}
-          className="font-bold text-xl mb-2 cursor-pointer hover:text-orange-500"
+          onClick={() => navigate(`/product/${product._id}`)}
+          className="font-bold text-lg cursor-pointer hover:text-orange-500"
         >
           {product.name}
         </h3>
 
-        <p className="text-gray-500 text-sm mb-2 flex-1">
+        <p className="text-gray-500 text-sm mt-1 line-clamp-2">
           {product.description}
         </p>
 
-       <p className="text-orange-500 font-bold text-lg mb-2">
-  PKR {product.price}
-</p>
+        <p className="text-orange-500 font-bold mt-2 text-lg">
+          PKR {product.price}
+        </p>
 
-        <div className="flex justify-between items-center mt-auto mb-2">
-          <div className="flex gap-3 items-center">
-            <button
-              onClick={() => removeFromCart(product._id)}
-              disabled={quantity === 0}
-              className="w-10 h-10 border-2 border-red-500 rounded-full flex justify-center items-center hover:bg-red-200 transition"
-            >
-              -
-            </button>
-            <span className="font-semibold">{quantity}</span>
-            <button
-              onClick={() => addToCart(product)}
-              className="w-10 h-10 border-2 border-green-500 rounded-full flex justify-center items-center hover:bg-green-200 transition"
-            >
-              +
-            </button>
-          </div>
+        {/* CART CONTROLS */}
+        <div className="flex items-center justify-between mt-4">
+
+          <button
+            onClick={() => removeFromCart(product._id)}
+            className="w-8 h-8 bg-gray-200 rounded-full hover:bg-red-200"
+          >
+            -
+          </button>
+
+          <span className="font-semibold">{quantity}</span>
+
+          <button
+            onClick={() => addToCart(product)}
+            className="w-8 h-8 bg-orange-500 text-white rounded-full hover:bg-orange-600"
+          >
+            +
+          </button>
+
         </div>
+
+        {/* VIEW DETAILS */}
+        <button
+          onClick={() => navigate(`/product/${product._id}`)}
+          className="w-full mt-4 py-2 bg-gray-100 hover:bg-orange-100 rounded-lg text-sm"
+        >
+          View Details
+        </button>
+
       </div>
     </div>
   );

@@ -1,18 +1,30 @@
 import React, { createContext, useState, useEffect } from "react";
 
-// Named export for context
 export const CartContext = createContext();
 
 const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [user, setUser] = useState(null);
 
-  // Load cart and user from localStorage
+  // ================= LOAD FROM LOCALSTORAGE =================
   useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) setCartItems(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem("cart");
 
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCartItems(Array.isArray(parsed) ? parsed : []);
+      } else {
+        setCartItems([]);
+      }
+    } catch (err) {
+      console.warn("Cart parse error:", err);
+      setCartItems([]);
+    }
+
+    // ================= USER TOKEN =================
     const token = localStorage.getItem("userToken");
+
     if (token) {
       try {
         const base64Payload = token.split(".")[1];
@@ -21,57 +33,86 @@ const CartProvider = ({ children }) => {
           setUser(payload);
         }
       } catch (err) {
-        console.warn("Invalid token, clearing user state");
+        console.warn("Invalid token");
         setUser(null);
       }
     }
   }, []);
 
-  // Save cart to localStorage
+  // ================= SAVE CART =================
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
+    try {
+      localStorage.setItem("cart", JSON.stringify(cartItems || []));
+    } catch (err) {
+      console.warn("Save cart error:", err);
+    }
   }, [cartItems]);
 
+  // ================= ADD =================
   const addToCart = (product) => {
+    if (!product || !product._id) return;
+
     setCartItems((prev) => {
-      const existing = prev.find((item) => item._id === product._id);
+      const safePrev = Array.isArray(prev) ? prev : [];
+
+      const existing = safePrev.find((item) => item._id === product._id);
+
       if (existing) {
-        return prev.map((item) =>
+        return safePrev.map((item) =>
           item._id === product._id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: (item.quantity || 0) + 1 }
             : item
         );
-      } else {
-        return [...prev, { ...product, quantity: 1 }];
       }
+
+      return [...safePrev, { ...product, quantity: 1 }];
     });
   };
 
+  // ================= REMOVE =================
   const removeFromCart = (id) => {
-    setCartItems((prev) =>
-      prev
+    if (!id) return;
+
+    setCartItems((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+
+      return safePrev
         .map((item) =>
-          item._id === id ? { ...item, quantity: item.quantity - 1 } : item
+          item._id === id
+            ? { ...item, quantity: (item.quantity || 0) - 1 }
+            : item
         )
-        .filter((item) => item.quantity > 0)
-    );
+        .filter((item) => item.quantity > 0);
+    });
   };
 
+  // ================= CLEAR =================
   const clearCart = () => setCartItems([]);
 
+  // ================= GET QTY =================
   const getQuantity = (id) => {
-    const item = cartItems.find((i) => i._id === id);
+    if (!id) return 0;
+
+    const safeCart = Array.isArray(cartItems) ? cartItems : [];
+    const item = safeCart.find((i) => i._id === id);
     return item ? item.quantity : 0;
   };
 
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, clearCart, getQuantity, user }}
+      value={{
+        cartItems: Array.isArray(cartItems) ? cartItems : [],
+        setCartItems,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        getQuantity,
+        user,
+      }}
     >
       {children}
     </CartContext.Provider>
   );
 };
 
-// Default export for Provider (Vite Fast Refresh friendly)
 export default CartProvider;

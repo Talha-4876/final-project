@@ -34,21 +34,20 @@ import Checkout from "./pages/Checkout";
 import Tables from "./pages/Tables";
 import TableBooking from "./pages/TableBooking";
 import Profile from "./pages/Profile";
-
-/* ================= AUTH ================= */
 import Signup from "./components/Signup";
+import ProductDetail from "./pages/ProductDetail"; // ⭐ NEW
 
 /* ================= NOTIFICATION ================= */
 import { Toaster } from "react-hot-toast";
 
-/* ================= PROTECTED ROUTE ================= */
+/* ================= PROTECTED ================= */
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("userToken"); // use same token as CartContext/BookingContext
+  const token = localStorage.getItem("userToken");
   if (!token) return <Navigate to="/signup" replace />;
   return children;
 };
 
-/* ================= HOME WRAPPER ================= */
+/* ================= HOME ================= */
 const HomeWrapper = () => {
   const location = useLocation();
 
@@ -65,35 +64,14 @@ const HomeWrapper = () => {
 
   return (
     <>
-      <section id="hero">
-        <Hero />
-      </section>
-
-      <section id="about">
-        <About />
-      </section>
-
-      <section id="menu">
-        <Menu />
-        <section id="book-table" className="mt-10">
-          <TableBooking />
-        </section>
-      </section>
-
-      <section id="services">
-        <Services />
-      </section>
-
-      <section id="how-we-work">
-        <Work />
-      </section>
-
-      <section id="opening-hours">
-        <OpeningHours />
-      </section>
-
+      <Hero />
+      <section id="about"><About /></section>
+      <section id="menu"><Menu /></section>
       <Reviews />
       <ChefSection />
+      <Services />
+      <Work />
+      <OpeningHours />
       <ChatSection />
       <GetInTouch />
     </>
@@ -103,92 +81,45 @@ const HomeWrapper = () => {
 /* ================= APP ================= */
 function App() {
   const [showModal, setShowModal] = useState(false);
-  const [modalIsForgot, setModalIsForgot] = useState(false);
-
-  const isAdmin = true;
 
   return (
     <CartProvider>
       <BookingProvider>
         <SearchProvider>
           <Router>
-            {/* Navbar */}
-            <Navbar
-              isAdmin={isAdmin}
-              openAuth={() => {
-                setModalIsForgot(false);
-                setShowModal(true);
-              }}
-            />
 
-            {/* Routes */}
+            <Navbar />
+
             <Routes>
+
               <Route path="/signup" element={<Signup />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <HomeWrapper />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/book-table"
-                element={
-                  <ProtectedRoute>
-                    <TableBooking />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/cart"
-                element={
-                  <ProtectedRoute>
-                    <Cart />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/checkout"
-                element={
-                  <ProtectedRoute>
-                    <Checkout />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tables"
-                element={
-                  <ProtectedRoute>
-                    <Tables />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
+
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <HomeWrapper />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/product/:id" element={
+                <ProtectedRoute>
+                  <ProductDetail />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+              <Route path="/tables" element={<ProtectedRoute><Tables /></ProtectedRoute>} />
+              <Route path="/book-table" element={<ProtectedRoute><TableBooking /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+              <Route path="*" element={<Navigate to="/" />} />
+
             </Routes>
 
-            {/* Auth Modal */}
-            <DelayedAuthModal
-              isOpen={showModal}
-              onClose={() => setShowModal(false)}
-              initialIsForgot={modalIsForgot}
-            />
-
             <Chatbot />
-
-            {/* Footer */}
             <Footer />
+            <Toaster />
 
-            {/* Toaster for booking notifications */}
-            <Toaster position="top-right" reverseOrder={false} />
           </Router>
         </SearchProvider>
       </BookingProvider>
@@ -197,7 +128,4 @@ function App() {
 }
 
 export default App;
-
-
-
 

@@ -6,6 +6,8 @@ const reviewSchema = new mongoose.Schema({
   comment: { type: String, required: true },
   rating: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now },
+  // Review.js model mein add karo
+likes: { type: Number, default: 0 },
 });
 
 export default mongoose.model("Review", reviewSchema);
