@@ -2,9 +2,6 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { products } from "../assets/assets";
 
-// ─────────────────────────────────────────────
-// Build carousel slides from assets.js products
-// ─────────────────────────────────────────────
 const CATEGORY_ORDER = [
   "fast food", "breakfast", "lunch",
   "dinner", "coffee", "cold-drinks", "juices",
@@ -36,9 +33,14 @@ const FLOAT_CARDS = [
   { emoji: "☕", name: "Cold Brew",      price: "PKR 420" },
 ];
 
-// ─────────────────────────────────────────────
-// Styles injected as <style> tag
-// ─────────────────────────────────────────────
+// Typewriter words that cycle
+const TYPEWRITER_WORDS = [
+  "Fast Food Ka Asli Boss",
+  "Desi Zaiqay, Modern Andaaz",
+  "Har Dish Mein Pyaar",
+  "Lahore Ka No.1 Taste",
+];
+
 const HERO_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,500;0,600;1,300&display=swap');
 
@@ -62,13 +64,11 @@ const HERO_CSS = `
     .bb-left { padding: 2rem 1.5rem 4rem; }
   }
 
-  /* Diagonal geo lines */
   .bb-geo {
     position: absolute; inset: 0; z-index: 0;
     opacity: .04; pointer-events: none; overflow: hidden;
   }
 
-  /* Corner glows */
   .bb-glow-tr {
     position: absolute; top: 0; right: 0;
     width: 340px; height: 340px; z-index: 0; pointer-events: none;
@@ -80,11 +80,14 @@ const HERO_CSS = `
     background: radial-gradient(circle at bottom left, rgba(255,120,0,.09) 0%, transparent 70%);
   }
 
-  /* ── LEFT ─────────────────────────────────── */
   .bb-left {
     padding: 3.5rem 3rem 5.5rem;
-    display: flex; flex-direction: column; gap: 1.6rem;
+    display: flex; flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.6rem;
     z-index: 10; position: relative;
+    justify-content: center;
   }
 
   .bb-eyebrow {
@@ -96,19 +99,50 @@ const HERO_CSS = `
 
   .bb-headline {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(3.8rem, 6.5vw, 6.4rem);
-    line-height: .93; letter-spacing: -.01em;
+    font-size: clamp(3.2rem, 5.5vw, 5.6rem);
+    line-height: .95; letter-spacing: -.01em;
+    min-height: 5.8em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   .bb-h-white  { color: #f5ede0; display: block; }
   .bb-h-stroke { -webkit-text-stroke: 2px #ff5500; color: transparent; display: block; }
   .bb-h-fill   { color: #ff5500; display: block; }
 
+  /* Typewriter line */
+  .bb-typewriter-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.2rem;
+  }
+  .bb-typewriter {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.6rem, 2.8vw, 2.6rem);
+    color: #ff5500;
+    letter-spacing: .04em;
+    display: inline-block;
+  }
+  .bb-cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1em;
+    background: #ff5500;
+    margin-left: 4px;
+    vertical-align: middle;
+    border-radius: 1px;
+    animation: bbBlink 0.75s steps(1) infinite;
+  }
+  @keyframes bbBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
   .bb-desc {
     font-size: .9rem; color: #8a6e5a;
-    line-height: 1.8; max-width: 350px; font-weight: 300;
+    line-height: 1.8; max-width: 380px; font-weight: 300;
   }
 
-  .bb-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bb-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .bb-pill {
     font-size: 10px; font-weight: 600; letter-spacing: .1em;
     text-transform: uppercase; padding: 5px 12px; border-radius: 3px;
@@ -117,7 +151,7 @@ const HERO_CSS = `
   .bb-p-amber { background: rgba(255,140,0,.12); color: #ffaa40; border: 1px solid rgba(255,140,0,.22); }
   .bb-p-ghost { background: rgba(255,255,255,.05); color: #c8b09a; border: 1px solid rgba(255,255,255,.1); }
 
-  .bb-cta-row { display: flex; gap: 12px; align-items: center; }
+  .bb-cta-row { display: flex; gap: 12px; align-items: center; justify-content: center; }
 
   .bb-btn-primary {
     padding: 13px 30px; background: #ff4000; color: #fff;
@@ -139,7 +173,7 @@ const HERO_CSS = `
   .bb-btn-outline:hover { border-color: #ffaa40; background: rgba(255,170,64,.07); }
 
   .bb-stats {
-    display: flex; gap: 2.2rem;
+    display: flex; gap: 2.2rem; justify-content: center;
     padding-top: 1.2rem; border-top: 1px solid rgba(255,255,255,.06);
   }
   .bb-stat-num {
@@ -153,7 +187,6 @@ const HERO_CSS = `
     text-transform: uppercase; letter-spacing: .14em; margin-top: 4px;
   }
 
-  /* ── RIGHT ────────────────────────────────── */
   .bb-right {
     z-index: 10; position: relative;
     display: flex; align-items: center; justify-content: center;
@@ -169,7 +202,6 @@ const HERO_CSS = `
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
 
-  /* Individual rings */
   .bb-ring { position: absolute; border-radius: 50%; }
 
   .bb-r1 {
@@ -213,7 +245,6 @@ const HERO_CSS = `
     border-radius:50%; background:#060401;
   }
 
-  /* Image inside rings */
   .bb-img-circle {
     position: absolute; inset: 20px; border-radius: 50%;
     overflow: hidden; z-index: 5;
@@ -224,7 +255,6 @@ const HERO_CSS = `
     border-radius: 50%; display: block;
   }
 
-  /* Floating cards */
   .bb-fcards { pointer-events: none; }
   .bb-fc {
     position: absolute; z-index: 20;
@@ -244,7 +274,6 @@ const HERO_CSS = `
   .bb-fc-1 { bottom: 25px; left: -45px; }
   .bb-fc-2 { top: 45px;   right: -55px; }
 
-  /* Food name */
   .bb-food-name {
     margin-top: 1.4rem; text-align: center;
     font-family: 'Bebas Neue', sans-serif;
@@ -252,7 +281,6 @@ const HERO_CSS = `
     min-height: 1.4rem; min-width: 200px;
   }
 
-  /* Dots */
   .bb-dots { display: flex; gap: 7px; justify-content: center; margin-top: .8rem; }
   .bb-dot {
     height: 3px; border-radius: 2px;
@@ -260,7 +288,6 @@ const HERO_CSS = `
     transition: width .3s, background .3s;
   }
 
-  /* Marquee */
   .bb-marquee {
     position: absolute; bottom: 0; left: 0; right: 0;
     border-top: 1px solid rgba(255,100,0,.1);
@@ -271,37 +298,77 @@ const HERO_CSS = `
   .bb-mi  { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #8a5030; padding: 0 28px; white-space: nowrap; }
   .bb-sep { color: rgba(255,100,0,.25); padding: 0 4px; font-size: 10px; }
 
-  /* Animations */
   @keyframes bbCW  { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
   @keyframes bbCCW { from { transform: rotate(0deg);   } to { transform: rotate(-360deg); } }
 `;
 
-// ─────────────────────────────────────────────
-// Framer-motion variants
-// ─────────────────────────────────────────────
 const vLeft  = { hidden: { opacity: 0, x: -32 }, show: { opacity: 1, x: 0 } };
 const vRight = { hidden: { opacity: 0, x:  32 }, show: { opacity: 1, x: 0 } };
 const vDown  = { hidden: { opacity: 0, y: -18 }, show: { opacity: 1, y: 0 } };
 const vUp    = { hidden: { opacity: 0, y:  18 }, show: { opacity: 1, y: 0 } };
 
-// ─────────────────────────────────────────────
-// Hero Component
-// ─────────────────────────────────────────────
-export default function Hero() {
-  const slides    = buildSlides(products);
-  const [cur, setCur] = useState(0);
-  const trackRef  = useRef(null);
-  const rafRef    = useRef(null);
-  const lastTsRef = useRef(null);
-  const xRef      = useRef(0);
+// ── Typewriter Hook ──────────────────────────
+function useTypewriter(words, typingSpeed = 60, deletingSpeed = 35, pauseMs = 1800, delayMs = 2200) {
+  const [displayed, setDisplayed] = useState("");
+  const [wordIdx, setWordIdx] = useState(0);
+  const [phase, setPhase] = useState("wait"); // wait | typing | pause | deleting
+  const [charIdx, setCharIdx] = useState(0);
 
-  // Auto-advance carousel
+  useEffect(() => {
+    let timer;
+    if (phase === "wait") {
+      timer = setTimeout(() => setPhase("typing"), delayMs);
+    } else if (phase === "typing") {
+      const word = words[wordIdx];
+      if (charIdx < word.length) {
+        timer = setTimeout(() => {
+          setDisplayed(word.slice(0, charIdx + 1));
+          setCharIdx((c) => c + 1);
+        }, typingSpeed);
+      } else {
+        timer = setTimeout(() => setPhase("pause"), pauseMs);
+      }
+    } else if (phase === "pause") {
+      timer = setTimeout(() => setPhase("deleting"), 300);
+    } else if (phase === "deleting") {
+      if (charIdx > 0) {
+        timer = setTimeout(() => {
+          setDisplayed((d) => d.slice(0, -1));
+          setCharIdx((c) => c - 1);
+        }, deletingSpeed);
+      } else {
+        setWordIdx((w) => (w + 1) % words.length);
+        setPhase("typing");
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [phase, charIdx, wordIdx, words, typingSpeed, deletingSpeed, pauseMs, delayMs]);
+
+  return displayed;
+}
+
+export default function Hero() {
+  const slides   = buildSlides(products);
+  const [cur, setCur] = useState(0);
+  const trackRef = useRef(null);
+  const rafRef   = useRef(null);
+  const lastTsRef = useRef(null);
+  const xRef     = useRef(0);
+
+  // Page-load delay for left panel
+  const [showLeft, setShowLeft] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowLeft(true), 1800);
+    return () => clearTimeout(t);
+  }, []);
+
+  const typedText = useTypewriter(TYPEWRITER_WORDS);
+
   useEffect(() => {
     const t = setInterval(() => setCur((c) => (c + 1) % slides.length), 3200);
     return () => clearInterval(t);
   }, [slides.length]);
 
-  // Marquee rAF loop
   useEffect(() => {
     const loop = (ts) => {
       if (lastTsRef.current != null && trackRef.current) {
@@ -329,7 +396,6 @@ export default function Hero() {
 
       <section id="hero" className="bb-hero">
 
-        {/* Geo lines */}
         <svg className="bb-geo" viewBox="0 0 900 700" preserveAspectRatio="none">
           {[0, 100, 200, 300, 400].map((x) => (
             <line key={x} x1={x} y1="700" x2={x + 500} y2="0" stroke="#ff8c00" strokeWidth=".4" />
@@ -342,90 +408,97 @@ export default function Hero() {
         <div className="bb-glow-tr" />
         <div className="bb-glow-bl" />
 
-        {/* ── LEFT TEXT ────────────────────────────── */}
-        <div className="bb-left">
+        {/* ── LEFT TEXT ── */}
+        <AnimatePresence>
+          {showLeft && (
+            <div className="bb-left">
 
-          <motion.div
-            className="bb-eyebrow"
-            variants={vDown} initial="hidden" animate="show"
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <span className="bb-eyebrow-dash" />
-            🔥 Now Open · Giddar Kotha, Lahore
-          </motion.div>
+              <motion.div
+                className="bb-eyebrow"
+                variants={vDown} initial="hidden" animate="show"
+                transition={{ duration: 0.6, delay: 0 }}
+              >
+                <span className="bb-eyebrow-dash" />
+                🔥 Now Open · Giddar Kotha, Lahore
+              </motion.div>
 
-          <motion.h1
-            className="bb-headline"
-            variants={vLeft} initial="hidden" animate="show"
-            transition={{ duration: 0.75, delay: 0.25 }}
-          >
-            <span className="bb-h-white">Fast Food</span>
-            <span className="bb-h-stroke">Ka Asli</span>
-            <span className="bb-h-fill">Boss</span>
-          </motion.h1>
+              {/* Typewriter headline */}
+              <motion.div
+                className="bb-headline"
+                variants={vLeft} initial="hidden" animate="show"
+                transition={{ duration: 0.75, delay: 0.15 }}
+              >
+                <span className="bb-h-white">Fast Food</span>
+                <div className="bb-typewriter-wrap">
+                  <span className="bb-typewriter">{typedText}</span>
+                  <span className="bb-cursor" />
+                </div>
+              </motion.div>
 
-          <motion.p
-            className="bb-desc"
-            variants={vLeft} initial="hidden" animate="show"
-            transition={{ duration: 0.7, delay: 0.42 }}
-          >
-            Fresh, hot aur pyaar se bana — desi karahi se lekar cold brews tak,
-            sab ek jagah milega Bite Boss pe.
-          </motion.p>
+              <motion.p
+                className="bb-desc"
+                variants={vLeft} initial="hidden" animate="show"
+                transition={{ duration: 0.7, delay: 0.3 }}
+              >
+                Fresh, hot aur pyaar se bana — desi karahi se lekar cold brews tak,
+                sab ek jagah milega Bite Boss pe.
+              </motion.p>
 
-          <motion.div
-            className="bb-pills"
-            variants={vUp} initial="hidden" animate="show"
-            transition={{ duration: 0.6, delay: 0.56 }}
-          >
-            <span className="bb-pill bb-p-red">🌶 Spicy</span>
-            <span className="bb-pill bb-p-amber">🍔 Burgers</span>
-            <span className="bb-pill bb-p-ghost">☕ Coffee</span>
-            <span className="bb-pill bb-p-ghost">✨ New Menu</span>
-          </motion.div>
+              <motion.div
+                className="bb-pills"
+                variants={vUp} initial="hidden" animate="show"
+                transition={{ duration: 0.6, delay: 0.45 }}
+              >
+                <span className="bb-pill bb-p-red">🌶 Spicy</span>
+                <span className="bb-pill bb-p-amber">🍔 Burgers</span>
+                <span className="bb-pill bb-p-ghost">☕ Coffee</span>
+                <span className="bb-pill bb-p-ghost">✨ New Menu</span>
+              </motion.div>
 
-          <motion.div
-            className="bb-cta-row"
-            variants={vUp} initial="hidden" animate="show"
-            transition={{ duration: 0.6, delay: 0.68 }}
-          >
-            <motion.button
-              className="bb-btn-primary"
-              whileHover={{ scale: 1.04, boxShadow: "0 14px 30px rgba(255,64,0,.45)" }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleViewMenu}
-            >
-              View Menu →
-            </motion.button>
-            <motion.button
-              className="bb-btn-outline"
-              whileHover={{ borderColor: "#ffaa40", backgroundColor: "rgba(255,170,64,.07)" }}
-            >
-              Reserve Table
-            </motion.button>
-          </motion.div>
+              <motion.div
+                className="bb-cta-row"
+                variants={vUp} initial="hidden" animate="show"
+                transition={{ duration: 0.6, delay: 0.58 }}
+              >
+                <motion.button
+                  className="bb-btn-primary"
+                  whileHover={{ scale: 1.04, boxShadow: "0 14px 30px rgba(255,64,0,.45)" }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleViewMenu}
+                >
+                  View Menu →
+                </motion.button>
+                <motion.button
+                  className="bb-btn-outline"
+                  whileHover={{ borderColor: "#ffaa40", backgroundColor: "rgba(255,170,64,.07)" }}
+                >
+                  Reserve Table
+                </motion.button>
+              </motion.div>
 
-          <motion.div
-            className="bb-stats"
-            variants={vUp} initial="hidden" animate="show"
-            transition={{ duration: 0.6, delay: 0.82 }}
-          >
-            <div>
-              <div className="bb-stat-num">200<span className="bb-stat-suf">+</span></div>
-              <div className="bb-stat-lbl">Menu Items</div>
+              <motion.div
+                className="bb-stats"
+                variants={vUp} initial="hidden" animate="show"
+                transition={{ duration: 0.6, delay: 0.72 }}
+              >
+                <div>
+                  <div className="bb-stat-num">200<span className="bb-stat-suf">+</span></div>
+                  <div className="bb-stat-lbl">Menu Items</div>
+                </div>
+                <div>
+                  <div className="bb-stat-num">4.9<span className="bb-stat-suf">★</span></div>
+                  <div className="bb-stat-lbl">Rating</div>
+                </div>
+                <div>
+                  <div className="bb-stat-num">30<span className="bb-stat-suf-s">min</span></div>
+                  <div className="bb-stat-lbl">Delivery</div>
+                </div>
+              </motion.div>
             </div>
-            <div>
-              <div className="bb-stat-num">4.9<span className="bb-stat-suf">★</span></div>
-              <div className="bb-stat-lbl">Rating</div>
-            </div>
-            <div>
-              <div className="bb-stat-num">30<span className="bb-stat-suf-s">min</span></div>
-              <div className="bb-stat-lbl">Delivery</div>
-            </div>
-          </motion.div>
-        </div>
+          )}
+        </AnimatePresence>
 
-        {/* ── RIGHT IMAGE CAROUSEL ─────────────────── */}
+        {/* ── RIGHT IMAGE CAROUSEL ── */}
         <motion.div
           className="bb-right"
           variants={vRight} initial="hidden" animate="show"
@@ -433,14 +506,11 @@ export default function Hero() {
         >
           <div className="bb-ring-wrap">
             <div className="bb-ring-system">
-
-              {/* Spinning rings */}
               <div className="bb-ring bb-r1" />
               <div className="bb-ring bb-r2" />
               <div className="bb-ring bb-r3" />
               <div className="bb-ring bb-r4" />
 
-              {/* Carousel image */}
               <div className="bb-img-circle">
                 <AnimatePresence mode="wait">
                   <motion.img
@@ -455,7 +525,6 @@ export default function Hero() {
                 </AnimatePresence>
               </div>
 
-              {/* Floating info cards */}
               <div className="bb-fcards">
                 {FLOAT_CARDS.map((fc, i) => (
                   <motion.div
@@ -476,7 +545,6 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Animated food name */}
             <AnimatePresence mode="wait">
               <motion.p
                 key={cur + "_label"}
@@ -490,7 +558,6 @@ export default function Hero() {
               </motion.p>
             </AnimatePresence>
 
-            {/* Dot indicators */}
             <div className="bb-dots">
               {slides.map((_, i) => (
                 <motion.button
@@ -508,7 +575,7 @@ export default function Hero() {
           </div>
         </motion.div>
 
-        {/* ── Scrolling marquee ─────────────────────── */}
+        {/* ── Marquee ── */}
         <div className="bb-marquee">
           <div className="bb-marquee-track" ref={trackRef}>
             {marqueeContent.map((item, i) => (

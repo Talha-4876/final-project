@@ -9,12 +9,11 @@ const reservationSchema = new mongoose.Schema(
     },
 
     table: {
+      tableNumber: { type: Number, required: true },
       seats: { type: Number, required: true },
       date: { type: String, required: true },
       time: { type: String, required: true },
-      country: String,
-      city: String,
-      street: String,
+      label: { type: String, default: "" },
     },
 
     cartItems: [
@@ -40,6 +39,12 @@ const reservationSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       default: 0,
+    },
+
+    status: {
+      type: String,
+      enum: ["active", "completed", "cancelled"],
+      default: "active",
     },
   },
   { timestamps: true }

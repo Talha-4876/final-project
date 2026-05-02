@@ -2,32 +2,17 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../config";
-import AIReservationInsights from "../components/AIReservationInsights";
-
-// Charts
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 
 const AdminTable = () => {
   const [reservation, setReservation] = useState([]);
   const [filter, setFilter] = useState("all");
 
-  // Fetch all reservations
   const fetchReservation = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/reservations/all`);
       if (res.data.success) setReservation(res.data.reservations);
     } catch (err) {
-      console.error("GET RESERVATIONS ERROR:", err);
+      console.error(err);
       toast.error("Failed to fetch reservations");
     }
   };
@@ -36,223 +21,422 @@ const AdminTable = () => {
     fetchReservation();
   }, []);
 
-  // Filter reservations
   const filteredData = reservation.filter((r) => {
     if (filter === "paid") return r.isPaid;
     if (filter === "pending") return !r.isPaid;
+    if (filter === "active") return r.status === "active";
+    if (filter === "completed") return r.status === "completed";
     return true;
   });
 
-  // Earnings
-  const totalEarnings = reservation
-    .filter((r) => r.isPaid)
-    .reduce((acc, r) => acc + (r.totalAmount || 0), 0);
-
-  // Mark as paid
   const markAsPaid = async (id) => {
     try {
-      const res = await axios.put(
-        `${backendUrl}/api/reservations/paid/${id}`
-      );
-
+      const res = await axios.put(`${backendUrl}/api/reservations/paid/${id}`);
       if (res.data.success) {
         toast.success("Marked as Paid");
         fetchReservation();
-      } else {
-        toast.error(res.data.message || "Failed");
       }
     } catch (err) {
-      console.error("MARK PAID ERROR:", err);
-      toast.error("Failed to mark as paid");
+      toast.error("Failed");
     }
   };
 
-  // Delete
-  const deleteRes = async (id) => {
+  const markAsCompleted = async (id) => {
     try {
-      const confirmDelete = window.confirm("Delete this reservation?");
-      if (!confirmDelete) return;
+      const res = await axios.put(`${backendUrl}/api/reservations/complete/${id}`);
+      if (res.data.success) {
+        toast.success("Table free kar diya");
+        fetchReservation();
+      }
+    } catch (err) {
+      toast.error("Failed");
+    }
+  };
 
+  const deleteRes = async (id) => {
+    if (!window.confirm("Delete this reservation?")) return;
+    try {
       const res = await axios.delete(
         `${backendUrl}/api/reservations/delete/${id}`
       );
-
       if (res.data.success) {
         toast.success("Deleted");
         fetchReservation();
       }
     } catch (err) {
-      console.error("DELETE ERROR:", err);
-      toast.error("Failed to delete");
+      toast.error("Failed");
     }
   };
 
-  // ================= CHART DATA =================
-  const paidCount = reservation.filter((r) => r.isPaid).length;
-  const pendingCount = reservation.filter((r) => !r.isPaid).length;
+  const filters = ["all", "active", "completed", "paid", "pending"];
 
-  const pieData = [
-    { name: "Paid", value: paidCount },
-    { name: "Pending", value: pendingCount },
-  ];
+  const filterIcons = {
+    all: "⊞",
+    active: "●",
+    completed: "✓",
+    paid: "₨",
+    pending: "◷",
+  };
 
-  const barData = [
-    { name: "Total", value: reservation.length },
-    { name: "Paid", value: paidCount },
-    { name: "Pending", value: pendingCount },
-  ];
+  const filterCount = (f) => {
+    if (f === "all") return reservation.length;
+    if (f === "paid") return reservation.filter((r) => r.isPaid).length;
+    if (f === "pending") return reservation.filter((r) => !r.isPaid).length;
+    if (f === "active") return reservation.filter((r) => r.status === "active").length;
+    if (f === "completed") return reservation.filter((r) => r.status === "completed").length;
+    return 0;
+  };
 
   return (
-    <div className="p-6 space-y-6">
+    <div style={{ padding: "2rem", fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "#f8f7f4" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
-      {/* AI INSIGHTS */}
-      <AIReservationInsights />
+        .admin-filter-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 16px;
+          border-radius: 99px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          border: 1.5px solid transparent;
+          transition: all 0.18s ease;
+          font-family: 'DM Sans', sans-serif;
+          letter-spacing: 0.01em;
+        }
+        .admin-filter-btn:hover { transform: translateY(-1px); }
+        .admin-filter-btn.active {
+          background: #1a1a1a;
+          color: #fff;
+          border-color: #1a1a1a;
+        }
+        .admin-filter-btn.inactive {
+          background: #fff;
+          color: #555;
+          border-color: #e2e0db;
+        }
+        .admin-filter-btn.inactive:hover {
+          border-color: #bbb;
+          color: #222;
+        }
+        .filter-count {
+          background: #f0ede8;
+          color: #888;
+          border-radius: 99px;
+          padding: 1px 7px;
+          font-size: 11px;
+          font-weight: 600;
+        }
+        .admin-filter-btn.active .filter-count {
+          background: rgba(255,255,255,0.2);
+          color: rgba(255,255,255,0.85);
+        }
 
-      {/* HEADER CARDS */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="bg-white shadow rounded-xl p-4">
-          <h3 className="text-gray-500">Total Reservations</h3>
-          <p className="text-2xl font-bold">{reservation.length}</p>
+        .res-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13.5px;
+        }
+        .res-table thead th {
+          padding: 13px 16px;
+          text-align: left;
+          font-weight: 600;
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #999;
+          background: #f8f7f4;
+          border-bottom: 1.5px solid #ede9e3;
+        }
+        .res-table tbody tr {
+          border-bottom: 1px solid #f0ede8;
+          transition: background 0.12s;
+        }
+        .res-table tbody tr:hover { background: #faf9f7; }
+        .res-table tbody td { padding: 14px 16px; vertical-align: middle; }
+
+        .user-avatar {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #f4a261, #e76f51);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 600;
+          color: #fff;
+          flex-shrink: 0;
+          letter-spacing: -0.02em;
+        }
+
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 10px;
+          border-radius: 99px;
+          font-size: 11.5px;
+          font-weight: 500;
+          letter-spacing: 0.01em;
+        }
+        .badge-paid { background: #dcfce7; color: #15803d; }
+        .badge-pending { background: #fff7ed; color: #c2410c; }
+        .badge-active { background: #eff6ff; color: #1d4ed8; }
+        .badge-completed { background: #f3f4f6; color: #6b7280; }
+
+        .dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          display: inline-block;
+        }
+        .dot-paid { background: #22c55e; }
+        .dot-pending { background: #f97316; }
+        .dot-active { background: #3b82f6; }
+        .dot-completed { background: #9ca3af; }
+
+        .action-btn {
+          padding: 5px 12px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          border: 1px solid transparent;
+          transition: all 0.15s;
+          font-family: 'DM Sans', sans-serif;
+          width: 100%;
+          text-align: center;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+        .btn-pay { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .btn-pay:hover { background: #dcfce7; }
+        .btn-complete { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+        .btn-complete:hover { background: #dbeafe; }
+        .btn-delete { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+        .btn-delete:hover { background: #ffe4e6; }
+
+        .amount-cell {
+          font-family: 'DM Mono', monospace;
+          font-size: 13.5px;
+          font-weight: 500;
+          color: #1a1a1a;
+        }
+
+        .table-number {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: #1a1a1a;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 3px;
+        }
+
+        .empty-state {
+          padding: 60px 20px;
+          text-align: center;
+          color: #aaa;
+        }
+        .empty-icon {
+          font-size: 36px;
+          margin-bottom: 10px;
+          opacity: 0.4;
+        }
+
+        .section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.25rem;
+        }
+        .section-title {
+          font-size: 22px;
+          font-weight: 600;
+          color: #1a1a1a;
+          letter-spacing: -0.03em;
+        }
+        .section-sub {
+          font-size: 13px;
+          color: #999;
+          margin-top: 2px;
+        }
+        .refresh-btn {
+          padding: 8px 14px;
+          border-radius: 10px;
+          border: 1.5px solid #e2e0db;
+          background: #fff;
+          color: #555;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.15s;
+        }
+        .refresh-btn:hover { border-color: #bbb; color: #222; }
+      `}</style>
+
+      {/* HEADER */}
+      <div className="section-header">
+        <div>
+          <h1 className="section-title">Reservations</h1>
+          <p className="section-sub">{reservation.length} total bookings</p>
         </div>
-
-        <div className="bg-white shadow rounded-xl p-4">
-          <h3 className="text-gray-500">Paid Orders</h3>
-          <p className="text-2xl font-bold text-orange-600">
-            {paidCount}
-          </p>
-        </div>
-
-        <div className="bg-white shadow rounded-xl p-4">
-          <h3 className="text-gray-500">Total Earnings</h3>
-          <p className="text-2xl font-bold text-orange-500">
-            Rs. {totalEarnings}
-          </p>
-        </div>
+        <button className="refresh-btn" onClick={fetchReservation}>
+          ↻ Refresh
+        </button>
       </div>
 
-      {/* ================= GRAPHS ================= */}
-
-      {/* PIE CHART */}
-      <div className="bg-white shadow rounded-xl p-4">
-        <h3 className="font-bold mb-3">Paid vs Pending</h3>
-
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={100}
-              label
-            >
-              <Cell fill="#22c55e" />
-              <Cell fill="#f97316" />
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* BAR CHART */}
-      <div className="bg-white shadow rounded-xl p-4">
-        <h3 className="font-bold mb-3">Reservations Overview</h3>
-
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={barData}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#f97316" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* FILTER */}
-      <div className="flex gap-3">
-        {["all", "paid", "pending"].map((f) => (
+      {/* FILTERS */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "1.5rem" }}>
+        {filters.map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1 rounded ${
-              filter === f ? "bg-orange-500 text-white" : "bg-gray-200"
-            }`}
+            className={`admin-filter-btn ${filter === f ? "active" : "inactive"}`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            <span>{filterIcons[f]}</span>
+            <span style={{ textTransform: "capitalize" }}>{f}</span>
+            <span className="filter-count">{filterCount(f)}</span>
           </button>
         ))}
       </div>
 
       {/* TABLE */}
-      <div className="bg-white shadow rounded-xl overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-left">
+      <div style={{
+        background: "#fff",
+        borderRadius: "16px",
+        border: "1.5px solid #ede9e3",
+        overflow: "hidden",
+        overflowX: "auto",
+      }}>
+        <table className="res-table">
+          <thead>
             <tr>
-              <th className="p-3">User</th>
-              <th className="p-3">Booking</th>
-              <th className="p-3">Payment</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Action</th>
+              <th>Customer</th>
+              <th>Booking</th>
+              <th>Table</th>
+              <th>Payment</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
-
           <tbody>
-            {filteredData.map((r) => (
-              <tr key={r._id} className="border-t">
-                <td className="p-3">
-                  <p className="font-semibold">{r.user?.name}</p>
-                  <p className="text-gray-500 text-xs">{r.user?.email}</p>
-                  <p className="text-gray-400 text-xs">{r.user?.phone}</p>
-                </td>
+            {filteredData.map((r) => {
+              const initials = r.user?.name
+                ? r.user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+                : "?";
 
-                <td className="p-3">
-                  <p>{r.table?.date}</p>
-                  <p className="text-gray-500">{r.table?.time}</p>
-                  <p className="text-gray-400">{r.table?.seats} seats</p>
-                </td>
+              return (
+                <tr key={r._id}>
+                  {/* USER */}
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div className="user-avatar">{initials}</div>
+                      <div>
+                        <p style={{ fontWeight: 600, color: "#1a1a1a", margin: 0, fontSize: "13.5px" }}>{r.user?.name}</p>
+                        <p style={{ color: "#999", margin: "2px 0 0", fontSize: "11.5px" }}>{r.user?.email}</p>
+                        {r.user?.phone && (
+                          <p style={{ color: "#bbb", margin: "1px 0 0", fontSize: "11px" }}>{r.user?.phone}</p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
 
-                <td className="p-3 capitalize">{r.paymentMethod}</td>
+                  {/* BOOKING DATE/TIME */}
+                  <td>
+                    <p style={{ fontWeight: 500, color: "#1a1a1a", margin: 0 }}>{r.table?.date}</p>
+                    <p style={{ color: "#999", margin: "3px 0 0", fontSize: "12px" }}>{r.table?.time}</p>
+                  </td>
 
-                <td className="p-3 font-semibold">
-                  Rs. {r.totalAmount}
-                </td>
+                  {/* TABLE INFO */}
+                  <td>
+                    <div className="table-number">{r.table?.tableNumber}</div>
+                    <p style={{ color: "#888", margin: "3px 0 0", fontSize: "12px" }}>{r.table?.seats} seats</p>
+                    {r.table?.label && (
+                      <span style={{
+                        fontSize: "11px",
+                        color: "#e76f51",
+                        fontWeight: 500,
+                        background: "#fff4f0",
+                        padding: "2px 7px",
+                        borderRadius: "99px",
+                        display: "inline-block",
+                        marginTop: "3px",
+                      }}>{r.table.label}</span>
+                    )}
+                  </td>
 
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      r.isPaid
-                        ? "bg-orange-100 text-orange-600"
-                        : "bg-orange-400 text-white"
-                    }`}
-                  >
-                    {r.isPaid ? "Paid" : "Pending"}
-                  </span>
-                </td>
+                  {/* PAYMENT METHOD */}
+                  <td>
+                    <span style={{
+                      background: "#f5f4f1",
+                      color: "#555",
+                      padding: "4px 10px",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      textTransform: "capitalize",
+                    }}>{r.paymentMethod}</span>
+                  </td>
 
-                <td className="p-3 flex gap-2">
-                  {!r.isPaid && (
-                    <button
-                      onClick={() => markAsPaid(r._id)}
-                      className="bg-orange-100 text-orange-600 px-2 py-1 rounded"
-                    >
-                      Paid
-                    </button>
-                  )}
+                  {/* AMOUNT */}
+                  <td className="amount-cell">Rs. {r.totalAmount}</td>
 
-                  <button
-                    onClick={() => deleteRes(r._id)}
-                    className="bg-orange-400 text-white px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  {/* STATUS */}
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <span className={`badge ${r.isPaid ? "badge-paid" : "badge-pending"}`}>
+                        <span className={`dot ${r.isPaid ? "dot-paid" : "dot-pending"}`}></span>
+                        {r.isPaid ? "Paid" : "Pending"}
+                      </span>
+                      <span className={`badge ${r.status === "completed" ? "badge-completed" : "badge-active"}`}>
+                        <span className={`dot ${r.status === "completed" ? "dot-completed" : "dot-active"}`}></span>
+                        {r.status === "completed" ? "Completed" : "Active"}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px", minWidth: "100px" }}>
+                      {!r.isPaid && (
+                        <button className="action-btn btn-pay" onClick={() => markAsPaid(r._id)}>
+                          ✓ Mark Paid
+                        </button>
+                      )}
+                      {r.status === "active" && (
+                        <button className="action-btn btn-complete" onClick={() => markAsCompleted(r._id)}>
+                          ◎ Complete
+                        </button>
+                      )}
+                      <button className="action-btn btn-delete" onClick={() => deleteRes(r._id)}>
+                        ✕ Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
 
             {filteredData.length === 0 && (
               <tr>
-                <td colSpan="6" className="p-4 text-center text-gray-500">
-                  No reservations found.
+                <td colSpan="7">
+                  <div className="empty-state">
+                    <div className="empty-icon">📋</div>
+                    <p style={{ margin: 0, fontWeight: 500, color: "#888" }}>No reservations found</p>
+                    <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#bbb" }}>Try a different filter</p>
+                  </div>
                 </td>
               </tr>
             )}

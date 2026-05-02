@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from "react";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   useLocation,
 } from "react-router-dom";
 
-/* ================= CONTEXT ================= */
+/* CONTEXT */
 import CartProvider from "./context/CartContext";
 import BookingProvider from "./context/BookingContext";
 import { SearchProvider } from "./context/SearchContext";
 
-/* ================= COMPONENTS ================= */
+/* COMPONENTS */
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
@@ -22,12 +21,11 @@ import Reviews from "./components/Reviews";
 import ChefSection from "./components/ChefSection";
 import GetInTouch from "./components/GetInTouch";
 import ChatSection from "./components/ChatSection";
-import DelayedAuthModal from "./components/DelayedAuthModal";
 import Services from "./components/Services";
 import Work from "./components/Work";
 import OpeningHours from "./components/OpeningHours";
 
-/* ================= PAGES ================= */
+/* PAGES */
 import About from "./pages/About";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -35,19 +33,19 @@ import Tables from "./pages/Tables";
 import TableBooking from "./pages/TableBooking";
 import Profile from "./pages/Profile";
 import Signup from "./components/Signup";
-import ProductDetail from "./pages/ProductDetail"; // ⭐ NEW
+import ProductDetail from "./pages/ProductDetail";
 
-/* ================= NOTIFICATION ================= */
+/* NOTIFICATION */
 import { Toaster } from "react-hot-toast";
 
-/* ================= PROTECTED ================= */
+/* PROTECTED ROUTE */
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("userToken");
   if (!token) return <Navigate to="/signup" replace />;
   return children;
 };
 
-/* ================= HOME ================= */
+/* HOME */
 const HomeWrapper = () => {
   const location = useLocation();
 
@@ -78,49 +76,45 @@ const HomeWrapper = () => {
   );
 };
 
-/* ================= APP ================= */
+/* APP */
 function App() {
-  const [showModal, setShowModal] = useState(false);
-
   return (
     <CartProvider>
       <BookingProvider>
         <SearchProvider>
-          <Router>
 
-            <Navbar />
+          <Navbar />
 
-            <Routes>
+          <Routes>
 
-              <Route path="/signup" element={<Signup />} />
+            <Route path="/signup" element={<Signup />} />
 
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <HomeWrapper />
-                </ProtectedRoute>
-              } />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <HomeWrapper />
+              </ProtectedRoute>
+            } />
 
-              <Route path="/product/:id" element={
-                <ProtectedRoute>
-                  <ProductDetail />
-                </ProtectedRoute>
-              } />
+            <Route path="/product/:id" element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            } />
 
-              <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-              <Route path="/tables" element={<ProtectedRoute><Tables /></ProtectedRoute>} />
-              <Route path="/book-table" element={<ProtectedRoute><TableBooking /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+            <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/tables" element={<ProtectedRoute><Tables /></ProtectedRoute>} />
+            <Route path="/book-table" element={<ProtectedRoute><TableBooking /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-              <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" />} />
 
-            </Routes>
+          </Routes>
 
-            <Chatbot />
-            <Footer />
-            <Toaster />
+          <Chatbot />
+          <Footer />
+          <Toaster />
 
-          </Router>
         </SearchProvider>
       </BookingProvider>
     </CartProvider>
@@ -128,4 +122,3 @@ function App() {
 }
 
 export default App;
-

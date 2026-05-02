@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import Login from "./Components/AdminLogin";
 import DashboardLayout from "./pages/Dashboard";
 import AddMenu from "./pages/AddMenu";
+import AdminDashboard from "./pages/AdminDashboard";
 import UpdateMenu from "./pages/UpdateMenu";
 import ListMenu from "./pages/ListMenu";
 import AdminTable from "./pages/AdminTable";
@@ -14,6 +15,7 @@ import Deliveries from "./pages/Deliveries";
 import AdminInbox from "./pages/AdminInbox";
 import ChefManager from "./Components/ChefManager";
 import AdminSettings from "./pages/AdminSettings";
+import AddTable from "./pages/AddTable";
 const App = () => {
   const [token, setToken] = useState("");
 
@@ -50,23 +52,28 @@ const App = () => {
         />
 
         {/* Protected admin routes */}
-        {token && (
-          <Route
-            path="/admin"
-            element={<DashboardLayout handleLogout={handleLogout} />}
-          >
-            <Route path="dashboard"    element={<AddMenu />} />
-            <Route path="list"         element={<ListMenu />} />
-            <Route path="update/:id"   element={<UpdateMenu />} />
-            <Route path="table"        element={<AdminTable />} />
-            <Route path="reviews"      element={<AdminReviews />} />
-            <Route path="contacts"     element={<AdminContacts />} />
-            <Route path="inbox"        element={<AdminInbox />} />
-            <Route path="deliveries"   element={<Deliveries />} />
-            <Route path="chefs"        element={<ChefManager />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
-        )}
+       {/* Protected admin routes */}
+{token && (
+  <Route
+    path="/admin"
+    element={<DashboardLayout handleLogout={handleLogout} />}
+  >
+    <Route index element={<Navigate to="dashboard" />} /> {/* optional but best */}
+
+    <Route path="dashboard" element={<AdminDashboard />} />
+    <Route path="add"        element={<AddMenu />} />   {/* ✅ YE ADD KIYA */}
+    <Route path="list"       element={<ListMenu />} />
+    <Route path="update/:id" element={<UpdateMenu />} />
+    <Route path="table"      element={<AdminTable />} />
+    <Route path="reviews"    element={<AdminReviews />} />
+    <Route path="contacts"   element={<AdminContacts />} />
+    <Route path="inbox"      element={<AdminInbox />} />
+    <Route path="deliveries" element={<Deliveries />} />
+    <Route path="chefs"      element={<ChefManager />} />
+    <Route path="settings"   element={<AdminSettings />} />
+    <Route path="/admin/addtable" element={<AddTable />} />
+  </Route>
+)}
 
         {/* Fallback */}
         <Route

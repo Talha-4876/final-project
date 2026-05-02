@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
-import ReviewAnalytics from "../components/ReviewAnalytics";
-import AIReviewInsights from "../components/AIReviewInsights";
 import { backendUrl } from "../config";
 
 const AdminReviews = () => {
@@ -11,24 +9,25 @@ const AdminReviews = () => {
   const [ratingFilter, setRatingFilter] = useState("");
 
   /* ================= FETCH ================= */
-const fetchReviews = async () => {
-  try {
-    const token = localStorage.getItem("token");
+  const fetchReviews = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-    const res = await axios.get(
-      `${backendUrl}/api/reviews`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+      const res = await axios.get(
+        `${backendUrl}/api/reviews`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    setReviews(res.data?.reviews || []);
-  } catch (err) {
-    console.log(err.message);
-  }
-};
+      setReviews(res.data?.reviews || []);
+    } catch (err) {
+      console.log(err.message);
+    }
+  };
+
   useEffect(() => {
     fetchReviews();
   }, []);
@@ -47,7 +46,6 @@ const fetchReviews = async () => {
           prev.filter((r) => r._id !== id)
         );
       }
-
     } catch (err) {
       console.log(err.message);
     }
@@ -64,9 +62,7 @@ const fetchReviews = async () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
 
-      <ReviewAnalytics />
-      <AIReviewInsights />
-
+      {/* TITLE */}
       <h1 className="text-3xl font-bold mb-4">
         ⭐ Admin Reviews
       </h1>
@@ -145,6 +141,7 @@ const fetchReviews = async () => {
 
       </div>
 
+      {/* EMPTY STATE */}
       {filtered.length === 0 && (
         <p className="text-center mt-10 text-gray-500">
           No reviews found 😔

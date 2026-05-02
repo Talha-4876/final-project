@@ -4,44 +4,54 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { backendUrl } from "../config";
 
-/* =========================
-   NAV GROUPS
-========================= */
+
+import {
+  Home,
+  PlusCircle,
+  List,
+  Calendar,
+  Truck,
+  Star,
+  Mail,
+  ChefHat,
+  Settings,
+  Layout 
+} from "lucide-react";
+
+/* NAV */
 const NAV_GROUPS = [
   {
     label: "Operations",
     items: [
-      { path: "/admin/dashboard",  label: "Add Menu",     icon: "🍔", badge: null },
-      { path: "/admin/list",       label: "List Menu",    icon: "📋", badge: null },
-      { path: "/admin/table",      label: "Reservations", icon: "📅", badge: "reservations" },
-      { path: "/admin/deliveries", label: "Deliveries",   icon: "🚚", badge: "deliveries" },
+      { path: "/admin/dashboard", label: "Dashboard", icon: Home },
+      { path: "/admin/add",       label: "Add Menu",  icon: PlusCircle },
+      { path: "/admin/list",      label: "List Menu", icon: List },
+      { path: "/admin/table",     label: "Reservations", icon: Calendar, badge: "reservations" },
+      { path: "/admin/deliveries",label: "Deliveries", icon: Truck, badge: "deliveries" },
+      { path: "/admin/addtable", label: "Add Tables", icon: Layout, badge: null },
     ],
   },
   {
     label: "People",
     items: [
-      { path: "/admin/reviews",    label: "Customer Reviews", icon: "⭐", badge: null },
-      { path: "/admin/inbox",      label: "Messages Inbox",   icon: "📩", badge: "messages" },
-      { path: "/admin/chefs",      label: "Chefs",            icon: "👨‍🍳", badge: null },
+      { path: "/admin/reviews", label: "Customer Reviews", icon: Star },
+      { path: "/admin/inbox",   label: "Messages Inbox", icon: Mail, badge: "messages" },
+      { path: "/admin/chefs",   label: "Chefs", icon: ChefHat },
     ],
   },
 ];
 
-/* =========================
-   SETTINGS
-========================= */
+/* SETTINGS */
 const SETTINGS_ITEM = {
   path: "/admin/settings",
   label: "Settings",
-  icon: "⚙️",
-  badge: null,
+  icon: Settings,
 };
 
-/* =========================
-   PAGE TITLES
-========================= */
+/* TITLES */
 const PAGE_TITLES = {
   "/admin/dashboard":  { title: "Dashboard", sub: "Overview & quick stats" },
+  "/admin/add":        { title: "Add Menu", sub: "Create new dishes" },
   "/admin/list":       { title: "List Menu", sub: "Manage all menu items" },
   "/admin/table":      { title: "Reservations", sub: "Track bookings" },
   "/admin/deliveries": { title: "Deliveries", sub: "Manage orders" },
@@ -51,10 +61,8 @@ const PAGE_TITLES = {
   "/admin/settings":   { title: "Settings", sub: "System preferences" },
 };
 
-/* =========================
-   MENU ITEM (UNCHANGED UI + ARROW ADDED)
-========================= */
-const MenuItem = ({ path, label, icon, badge, isActive, onClick }) => {
+/* MENU ITEM */
+const MenuItem = ({ path, label, icon: Icon, badge, isActive, onClick }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -62,44 +70,48 @@ const MenuItem = ({ path, label, icon, badge, isActive, onClick }) => {
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 cursor-pointer border transition-all
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 cursor-pointer transition-all
         ${isActive
-          ? "bg-orange-500/20 border-orange-400/40"
+          ? "bg-orange-500/20 border border-orange-400/40"
           : hovered
-          ? "bg-white/[0.06]"
-          : "border-transparent"
+          ? "bg-white/[0.05]"
+          : ""
         }`}
     >
-      {/* ICON */}
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.08]">
-        {icon}
+      {/* ICON FIXED */}
+      <div className="flex items-center justify-center">
+        <Icon
+          size={18}
+          className={`transition-all
+            ${isActive ? "text-orange-400" : "text-white"}
+            ${hovered && !isActive ? "text-orange-300" : ""}
+          `}
+        />
       </div>
 
       {/* LABEL */}
-      <span className={`flex-1 text-[13.5px] ${
-        isActive ? "text-orange-300 font-semibold" : "text-neutral-300"
-      }`}>
+      <span className={`flex-1 text-[13.5px]
+        ${isActive ? "text-orange-300 font-semibold" : "text-neutral-300"}
+      `}>
         {label}
       </span>
 
       {/* BADGE */}
       {badge > 0 && (
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/25 text-red-300">
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">
           {badge}
         </span>
       )}
 
-      {/* 🔥 RIGHT ARROW (RESTORED LIKE BEFORE) */}
+      {/* ACTIVE ARROW */}
       {isActive && (
-        <span className="text-orange-400 text-xs ml-1">▼</span>
+        <span className="text-orange-400 text-xs">›</span>
       )}
     </div>
   );
 };
 
-/* =========================
-   SIDEBAR
-========================= */
+/* SIDEBAR */
 const Sidebar = ({ handleLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,24 +123,20 @@ const Sidebar = ({ handleLogout }) => {
   });
 
   const [openGroups, setOpenGroups] = useState({});
+useEffect(() => {
+  const fetchNotify = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/admin/notifications`);
+      setNotify(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-  /* 🔥 FETCH NOTIFICATIONS */
-  useEffect(() => {
-    const fetchNotify = async () => {
-      try {
-        const res = await axios.get(`${backendUrl}/admin/notifications`);
-        setNotify(res.data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    fetchNotify();
-    const interval = setInterval(fetchNotify, 8000);
-    return () => clearInterval(interval);
-  }, []);
-
-  /* 🔥 GROUP TOGGLE */
+  fetchNotify();
+  const interval = setInterval(fetchNotify, 8000);
+  return () => clearInterval(interval);
+}, []);
   const toggleGroup = (label) => {
     setOpenGroups((prev) => ({
       ...prev,
@@ -164,8 +172,6 @@ const Sidebar = ({ handleLogout }) => {
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
-
-            {/* 🔥 DROPDOWN HEADER */}
             <div
               onClick={() => toggleGroup(group.label)}
               className="flex items-center justify-between cursor-pointer px-2 pt-4"
@@ -176,21 +182,18 @@ const Sidebar = ({ handleLogout }) => {
 
               <motion.span
                 animate={{ rotate: openGroups[group.label] ? 180 : 0 }}
-                transition={{ duration: 0.25 }}
                 className="text-neutral-400 text-xs"
               >
                 ▼
               </motion.span>
             </div>
 
-            {/* ITEMS */}
             <AnimatePresence>
               {openGroups[group.label] !== false && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
                 >
                   {group.items.map((item) => (
                     <MenuItem
@@ -204,7 +207,6 @@ const Sidebar = ({ handleLogout }) => {
                 </motion.div>
               )}
             </AnimatePresence>
-
           </div>
         ))}
       </div>
@@ -223,7 +225,7 @@ const Sidebar = ({ handleLogout }) => {
       <div className="p-3 border-t border-white/[0.08]">
         <button
           onClick={handleLogout}
-          className="w-full bg-red-500/10 text-red-300 py-2 rounded-xl"
+          className="w-full bg-red-500/10 text-red-300 py-2 rounded-xl hover:bg-red-500/20"
         >
           Logout
         </button>
