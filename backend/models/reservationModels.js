@@ -14,6 +14,9 @@ const reservationSchema = new mongoose.Schema(
       date: { type: String, required: true },
       time: { type: String, required: true },
       label: { type: String, default: "" },
+      guests: { type: Number, default: 1 },
+      occasion: { type: String, default: "" },
+      specialRequests: { type: String, default: "" },
     },
 
     cartItems: [
@@ -25,16 +28,46 @@ const reservationSchema = new mongoose.Schema(
       },
     ],
 
+    // ── Payment ──────────────────────────────────────────
     paymentMethod: {
       type: String,
       enum: ["cash", "card", "jazzcash", "easypaisa"],
       default: "cash",
     },
 
+    // For JazzCash / EasyPaisa — store the mobile wallet number
+    walletNumber: {
+      type: String,
+      default: "",
+    },
+
+    // For Card — store last 4 digits only (never full PAN)
+    cardLast4: {
+      type: String,
+      default: "",
+    },
+
+    // Transaction / reference ID returned by payment gateway
+    transactionId: {
+      type: String,
+      default: "",
+    },
+
     isPaid: {
       type: Boolean,
       default: false,
     },
+
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+
+    paymentNote: {
+      type: String,
+      default: "",
+    },
+    // ─────────────────────────────────────────────────────
 
     totalAmount: {
       type: Number,

@@ -30,13 +30,29 @@ const Cart = () => {
   });
   const [loadingReview, setLoadingReview] = useState(false);
 
-  // ✅ TOTAL (SAFE)
-  const totalPricePKR = useMemo(() => {
-    return safeCartItems.reduce(
-      (acc, item) =>
-        acc + (item.price || 0) * (item.quantity || 0),
-      0
-    );
+  // ================= TOTAL WITH DISCOUNT =================
+  // Each item stored in cart already has the discounted price applied (set in ProductCard)
+  // But we also support re-calculating here in case raw price is stored
+  const { totalOriginal, totalDiscounted, totalSavings } = useMemo(() => {
+    let orig = 0;
+    let disc = 0;
+
+    safeCartItems.forEach((item) => {
+      const originalPrice = item.originalPrice || item.price || 0;
+      const discount = item.discountPercent || item.offer || 0;
+      const discountedPrice = discount
+        ? Math.round(originalPrice - (originalPrice * discount) / 100)
+        : originalPrice;
+
+      orig += originalPrice * (item.quantity || 1);
+      disc += discountedPrice * (item.quantity || 1);
+    });
+
+    return {
+      totalOriginal: orig,
+      totalDiscounted: disc,
+      totalSavings: orig - disc,
+    };
   }, [safeCartItems]);
 
   // ================= FETCH REVIEWS =================
@@ -61,10 +77,7 @@ const Cart = () => {
 
   // ================= INPUT HANDLER =================
   const handleReviewChange = (field, value) => {
-    setReviewInput((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setReviewInput((prev) => ({ ...prev, [field]: value }));
   };
 
   // ================= SUBMIT REVIEW =================
@@ -90,13 +103,7 @@ const Cart = () => {
       );
 
       setReviews((prev) => [res.data, ...(prev || [])]);
-
-      setReviewInput({
-        name: user?.name || "",
-        comment: "",
-        rating: "",
-      });
-
+      setReviewInput({ name: user?.name || "", comment: "", rating: "" });
       setShowReviewForm(false);
     } catch (err) {
       console.error(err);
@@ -112,11 +119,8 @@ const Cart = () => {
 
     setCartItems((prev) => {
       const safePrev = Array.isArray(prev) ? prev : [];
-
       return safePrev.map((item) =>
-        item._id === id
-          ? { ...item, quantity: newQty }
-          : item
+        item._id === id ? { ...item, quantity: newQty } : item
       );
     });
   };
@@ -125,10 +129,7 @@ const Cart = () => {
   if (safeCartItems.length === 0) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50">
-        <h2 className="text-2xl font-bold mb-4">
-          Your cart is empty
-        </h2>
-
+        <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
         <button
           onClick={() => navigate("/")}
           className="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600"
@@ -144,58 +145,106 @@ const Cart = () => {
       <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-lg p-8">
         <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
 
-        {safeCartItems.map((item) => (
-          <div
-            key={item._id}
-            className="flex justify-between items-center mb-4 border-b pb-2"
-          >
-            <div className="flex items-center gap-4">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-20 h-20 object-cover rounded-lg"
-              />
+        {safeCartItems.map((item) => {
+          const originalPrice = item.originalPrice || item.price || 0;
+          const discount = item.discountPercent || item.offer || 0;
+          const discountedPrice = discount
+            ? Math.round(originalPrice - (originalPrice * discount) / 100)
+            : originalPrice;
+          const qty = item.quantity || 1;
 
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
+          return (
+            <div
+              key={item._id}
+              className="flex justify-between items-center mb-4 border-b pb-4"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                  {/* Discount badge on cart image */}
+                  {discount > 0 && (
+                    <span className="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">
+                      {discount}% OFF
+                    </span>
+                  )}
+                </div>
 
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity || 1}
-                  onChange={(e) =>
-                    updateQuantity(
-                      item._id,
-                      parseInt(e.target.value) || 1
-                    )
-                  }
-                  className="border px-3 py-1 rounded w-20 mt-1"
-                />
+                <div>
+                  <h3 className="font-semibold">{item.name}</h3>
+
+                  {/* Quantity input */}
+                  <input
+                    type="number"
+                    min="1"
+                    value={qty}
+                    onChange={(e) =>
+                      updateQuantity(item._id, parseInt(e.target.value) || 1)
+                    }
+                    className="border px-3 py-1 rounded w-20 mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Price column */}
+              <div className="flex flex-col items-end gap-1">
+                <span className="font-bold text-orange-500 text-lg">
+                  PKR {(discountedPrice * qty).toLocaleString()}
+                </span>
+
+                {/* Show original price if discounted */}
+                {discount > 0 && (
+                  <span className="text-gray-400 text-xs line-through">
+                    PKR {(originalPrice * qty).toLocaleString()}
+                  </span>
+                )}
+
+                <button
+                  onClick={() => removeFromCart(item._id)}
+                  className="text-red-500 text-sm hover:underline"
+                >
+                  Remove
+                </button>
               </div>
             </div>
+          );
+        })}
 
-            <div className="flex flex-col items-end gap-1">
-              <span className="font-bold text-orange-500">
-                PKR: {(item.price || 0) * (item.quantity || 0)}
-              </span>
+        {/* ===== ORDER SUMMARY ===== */}
+        <div className="border-t pt-4 space-y-2">
+          {/* Show savings row only if there are any discounts */}
+          {totalSavings > 0 && (
+            <>
+              <div className="flex justify-between text-gray-500 text-sm">
+                <span>Original Total:</span>
+                <span className="line-through">PKR {totalOriginal.toLocaleString()}</span>
+              </div>
 
-              <button
-                onClick={() => removeFromCart(item._id)}
-                className="text-red-500 text-sm hover:underline"
-              >
-                Remove
-              </button>
-            </div>
+              <div className="flex justify-between text-green-600 font-semibold text-sm">
+                <span>🎉 Total Savings:</span>
+                <span>- PKR {totalSavings.toLocaleString()}</span>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-between items-center pt-2">
+            <span className="font-bold text-xl">Total Payable:</span>
+            <span className="font-bold text-2xl text-orange-500">
+              PKR {totalDiscounted.toLocaleString()}
+            </span>
           </div>
-        ))}
 
-        <div className="flex justify-between items-center mb-6 border-t pt-4">
-          <span className="font-bold text-xl">Total:</span>
-          <span className="font-bold text-2xl text-orange-500">
-            PKR: {totalPricePKR}
-          </span>
+          {totalSavings > 0 && (
+            <div className="bg-green-50 border border-green-200 text-green-700 text-sm text-center py-2 rounded-xl mt-2 font-medium">
+              You are saving PKR {totalSavings.toLocaleString()} on this order! 🥳
+            </div>
+          )}
         </div>
 
+        {/* ===== ACTIONS ===== */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mt-6">
           <button
             onClick={clearCart}
@@ -215,9 +264,7 @@ const Cart = () => {
 
       {/* ================= REVIEWS ================= */}
       <div className="max-w-4xl mx-auto mt-12 p-6 bg-gray-100 rounded-2xl relative">
-        <h2 className="text-2xl font-bold mb-4">
-          Customer Reviews
-        </h2>
+        <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
 
         {!showReviewForm && (
           <button
@@ -235,9 +282,7 @@ const Cart = () => {
                 type="text"
                 placeholder="Your Name"
                 value={reviewInput.name}
-                onChange={(e) =>
-                  handleReviewChange("name", e.target.value)
-                }
+                onChange={(e) => handleReviewChange("name", e.target.value)}
                 className="border px-3 py-2 rounded"
               />
             )}
@@ -245,17 +290,13 @@ const Cart = () => {
             <textarea
               placeholder="Your Comment"
               value={reviewInput.comment}
-              onChange={(e) =>
-                handleReviewChange("comment", e.target.value)
-              }
+              onChange={(e) => handleReviewChange("comment", e.target.value)}
               className="border px-3 py-2 rounded"
             />
 
             <select
               value={reviewInput.rating}
-              onChange={(e) =>
-                handleReviewChange("rating", e.target.value)
-              }
+              onChange={(e) => handleReviewChange("rating", e.target.value)}
               className="border px-3 py-2 rounded"
             >
               <option value="">Select Rating</option>
@@ -288,10 +329,7 @@ const Cart = () => {
         <div className="mt-4 space-y-3">
           {reviews.length > 0 ? (
             reviews.map((r, idx) => (
-              <div
-                key={idx}
-                className="bg-white p-4 rounded shadow"
-              >
+              <div key={idx} className="bg-white p-4 rounded shadow">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-orange-400 flex items-center justify-center text-white font-bold">
                     {r.name?.[0]?.toUpperCase() || "U"}
@@ -306,22 +344,16 @@ const Cart = () => {
 
                   <div className="ml-auto text-yellow-400">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i}>
-                        {i < r.rating ? "★" : "☆"}
-                      </span>
+                      <span key={i}>{i < r.rating ? "★" : "☆"}</span>
                     ))}
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-sm mt-2">
-                  {r.comment}
-                </p>
+                <p className="text-gray-600 text-sm mt-2">{r.comment}</p>
               </div>
             ))
           ) : (
-            <p className="text-gray-400">
-              No reviews yet.
-            </p>
+            <p className="text-gray-400">No reviews yet.</p>
           )}
         </div>
       </div>

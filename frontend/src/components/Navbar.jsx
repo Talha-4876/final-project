@@ -3,7 +3,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { CartContext } from "../context/CartContext";
 import { SearchContext } from "../context/SearchContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaShoppingCart, FaSearch, FaBars, FaTimes, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
+import { FaShoppingCart, FaSearch, FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaBell } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 const Navbar = ({ openAuth }) => {
@@ -14,6 +14,7 @@ const Navbar = ({ openAuth }) => {
   const [shakeCart,   setShakeCart]   = useState(false);
   const [isLoggedIn,  setIsLoggedIn]  = useState(false);
   const [userName,    setUserName]    = useState("");
+  const [hasNotif,    setHasNotif]    = useState(true); // true = unread notification dot
 
   const { cartItems }                   = useContext(CartContext);
   const { searchQuery, setSearchQuery } = useContext(SearchContext);
@@ -25,6 +26,7 @@ const Navbar = ({ openAuth }) => {
     { name: "Menu",   type: "scroll", target: "menu"    },
     { name: "About",  type: "scroll", target: "about"   },
     { name: "Tables", type: "route",  target: "/tables" },
+    { name: "Contact",   type: "scroll", target: "contact"}, 
   ];
 
   const checkAuth = () => {
@@ -111,6 +113,11 @@ const Navbar = ({ openAuth }) => {
       document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleBellClick = () => {
+    setHasNotif(false);
+    handleRoute("/notifications", "Notifications");
+  };
+
   const AuthButton = ({ mobile = false }) => {
     if (isLoggedIn) {
       return (
@@ -156,6 +163,17 @@ const Navbar = ({ openAuth }) => {
         }
         .shake { animation: cartShake 0.5s ease; }
 
+        @keyframes bellRing {
+          0%,100%{ transform:rotate(0deg); }
+          15%    { transform:rotate(-18deg); }
+          30%    { transform:rotate(18deg); }
+          45%    { transform:rotate(-12deg); }
+          60%    { transform:rotate(12deg); }
+          75%    { transform:rotate(-6deg); }
+          90%    { transform:rotate(6deg); }
+        }
+        .bell-ring { animation: bellRing 0.7s ease; }
+
         @keyframes searchDrop {
           from { opacity:0; transform:translateY(-8px) scale(.97); }
           to   { opacity:1; transform:translateY(0) scale(1); }
@@ -199,6 +217,12 @@ const Navbar = ({ openAuth }) => {
           flex-shrink: 0;
           box-shadow: 0 0 0 2px rgba(34,197,94,0.2);
         }
+
+        @keyframes notifPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(234,88,12,0.5); }
+          50%       { box-shadow: 0 0 0 4px rgba(234,88,12,0); }
+        }
+        .notif-dot { animation: notifPulse 1.8s ease infinite; }
       `}</style>
 
       <nav className={`font-lora fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-orange-50/97 backdrop-blur-xl shadow-[0_4px_32px_rgba(234,88,12,0.12)] border-b border-orange-200/70" : "bg-orange-50/85 backdrop-blur-md border-b border-orange-100/50"}`}>
@@ -247,8 +271,15 @@ const Navbar = ({ openAuth }) => {
                 )}
               </button>
 
-              <button onClick={() => handleRoute("/profile", "Profile")} className="w-9 h-9 rounded-full flex items-center justify-center text-stone-500 hover:text-orange-600 hover:bg-orange-100/80 transition-all duration-200 border-none bg-transparent cursor-pointer">
-                <FaUserCircle size={16} />
+              {/* BELL NOTIFICATION ICON (profile ki jagah) */}
+              <button
+                onClick={handleBellClick}
+                className="relative w-9 h-9 rounded-full flex items-center justify-center text-stone-500 hover:text-orange-600 hover:bg-orange-100/80 transition-all duration-200 border-none bg-transparent cursor-pointer"
+              >
+                <FaBell size={15} className={hasNotif ? "bell-ring" : ""} />
+                {hasNotif && (
+                  <span className="notif-dot absolute -top-1 -right-1 w-[10px] h-[10px] rounded-full bg-gradient-to-br from-orange-500 to-orange-700 border-2 border-orange-50" />
+                )}
               </button>
 
               <div className="w-px h-5 bg-orange-200 mx-2" />
@@ -357,9 +388,16 @@ const Navbar = ({ openAuth }) => {
 
         {/* Drawer Footer */}
         <div className="px-4 py-4 border-t border-orange-100 space-y-2.5">
-          <button onClick={() => handleRoute("/profile","Profile")} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/70 border border-orange-200 text-stone-600 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50 font-lora font-semibold text-sm tracking-wide transition-all duration-200 cursor-pointer">
-            <FaUserCircle size={15} />
-            My Profile
+          {/* Bell / Notifications button in drawer */}
+          <button
+            onClick={() => { handleBellClick(); setIsOpen(false); }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/70 border border-orange-200 text-stone-600 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50 font-lora font-semibold text-sm tracking-wide transition-all duration-200 cursor-pointer relative"
+          >
+            <FaBell size={15} />
+            Notifications
+            {hasNotif && (
+              <span className="notif-dot absolute top-2.5 right-4 w-[8px] h-[8px] rounded-full bg-orange-500 border border-orange-50" />
+            )}
           </button>
           <AuthButton mobile />
         </div>

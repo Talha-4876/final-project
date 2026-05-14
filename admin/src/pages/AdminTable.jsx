@@ -5,15 +5,33 @@ import { backendUrl } from "../config";
 
 const AdminTable = () => {
   const [reservation, setReservation] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  // FETCH RESERVATIONS
   const fetchReservation = async () => {
     try {
-      const res = await axios.get(`${backendUrl}/api/reservations/all`);
-      if (res.data.success) setReservation(res.data.reservations);
+      setLoading(true);
+
+      const res = await axios.get(
+        `${backendUrl}/api/reservations/all`
+      );
+
+      console.log("Reservation API:", res.data);
+
+      if (res.data.success) {
+        const data = res.data.reservations || [];
+        setReservation(data);
+      } else {
+        toast.error("No reservations found");
+      }
     } catch (err) {
-      console.error(err);
+      console.log(err);
       toast.error("Failed to fetch reservations");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -21,422 +39,400 @@ const AdminTable = () => {
     fetchReservation();
   }, []);
 
-  const filteredData = reservation.filter((r) => {
-    if (filter === "paid") return r.isPaid;
-    if (filter === "pending") return !r.isPaid;
-    if (filter === "active") return r.status === "active";
-    if (filter === "completed") return r.status === "completed";
-    return true;
-  });
+  // FILTER + SEARCH
+  useEffect(() => {
+    let data = [...reservation];
 
+    // FILTERS
+    if (filter === "paid") {
+      data = data.filter((r) => r.isPaid);
+    }
+
+    if (filter === "pending") {
+      data = data.filter((r) => !r.isPaid);
+    }
+
+    if (filter === "active") {
+      data = data.filter((r) => r.status === "active");
+    }
+
+    if (filter === "completed") {
+      data = data.filter((r) => r.status === "completed");
+    }
+
+    // SEARCH
+    if (search.trim() !== "") {
+      data = data.filter((r) =>
+        r?.user?.name
+          ?.toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    }
+
+    setFilteredData(data);
+  }, [reservation, filter, search]);
+
+  // MARK PAID
   const markAsPaid = async (id) => {
     try {
-      const res = await axios.put(`${backendUrl}/api/reservations/paid/${id}`);
+      const res = await axios.put(
+        `${backendUrl}/api/reservations/paid/${id}`
+      );
+
       if (res.data.success) {
         toast.success("Marked as Paid");
         fetchReservation();
       }
     } catch (err) {
+      console.log(err);
       toast.error("Failed");
     }
   };
 
+  // COMPLETE
   const markAsCompleted = async (id) => {
     try {
-      const res = await axios.put(`${backendUrl}/api/reservations/complete/${id}`);
+      const res = await axios.put(
+        `${backendUrl}/api/reservations/complete/${id}`
+      );
+
       if (res.data.success) {
-        toast.success("Table free kar diya");
+        toast.success("Reservation Completed");
         fetchReservation();
       }
     } catch (err) {
+      console.log(err);
       toast.error("Failed");
     }
   };
 
+  // DELETE
   const deleteRes = async (id) => {
-    if (!window.confirm("Delete this reservation?")) return;
+    const confirmDelete = window.confirm(
+      "Delete this reservation?"
+    );
+
+    if (!confirmDelete) return;
+
     try {
       const res = await axios.delete(
         `${backendUrl}/api/reservations/delete/${id}`
       );
+
       if (res.data.success) {
         toast.success("Deleted");
         fetchReservation();
       }
     } catch (err) {
-      toast.error("Failed");
+      console.log(err);
+      toast.error("Delete failed");
     }
   };
 
   const filters = ["all", "active", "completed", "paid", "pending"];
 
-  const filterIcons = {
-    all: "⊞",
-    active: "●",
-    completed: "✓",
-    paid: "₨",
-    pending: "◷",
-  };
-
+  // COUNT
   const filterCount = (f) => {
     if (f === "all") return reservation.length;
-    if (f === "paid") return reservation.filter((r) => r.isPaid).length;
-    if (f === "pending") return reservation.filter((r) => !r.isPaid).length;
-    if (f === "active") return reservation.filter((r) => r.status === "active").length;
-    if (f === "completed") return reservation.filter((r) => r.status === "completed").length;
+    if (f === "paid")
+      return reservation.filter((r) => r.isPaid).length;
+    if (f === "pending")
+      return reservation.filter((r) => !r.isPaid).length;
+    if (f === "active")
+      return reservation.filter((r) => r.status === "active").length;
+    if (f === "completed")
+      return reservation.filter((r) => r.status === "completed").length;
+
     return 0;
   };
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "#f8f7f4" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
-
-        .admin-filter-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 7px 16px;
-          border-radius: 99px;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1.5px solid transparent;
-          transition: all 0.18s ease;
-          font-family: 'DM Sans', sans-serif;
-          letter-spacing: 0.01em;
-        }
-        .admin-filter-btn:hover { transform: translateY(-1px); }
-        .admin-filter-btn.active {
-          background: #1a1a1a;
-          color: #fff;
-          border-color: #1a1a1a;
-        }
-        .admin-filter-btn.inactive {
-          background: #fff;
-          color: #555;
-          border-color: #e2e0db;
-        }
-        .admin-filter-btn.inactive:hover {
-          border-color: #bbb;
-          color: #222;
-        }
-        .filter-count {
-          background: #f0ede8;
-          color: #888;
-          border-radius: 99px;
-          padding: 1px 7px;
-          font-size: 11px;
-          font-weight: 600;
-        }
-        .admin-filter-btn.active .filter-count {
-          background: rgba(255,255,255,0.2);
-          color: rgba(255,255,255,0.85);
-        }
-
-        .res-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13.5px;
-        }
-        .res-table thead th {
-          padding: 13px 16px;
-          text-align: left;
-          font-weight: 600;
-          font-size: 11px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #999;
-          background: #f8f7f4;
-          border-bottom: 1.5px solid #ede9e3;
-        }
-        .res-table tbody tr {
-          border-bottom: 1px solid #f0ede8;
-          transition: background 0.12s;
-        }
-        .res-table tbody tr:hover { background: #faf9f7; }
-        .res-table tbody td { padding: 14px 16px; vertical-align: middle; }
-
-        .user-avatar {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #f4a261, #e76f51);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 13px;
-          font-weight: 600;
-          color: #fff;
-          flex-shrink: 0;
-          letter-spacing: -0.02em;
-        }
-
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 3px 10px;
-          border-radius: 99px;
-          font-size: 11.5px;
-          font-weight: 500;
-          letter-spacing: 0.01em;
-        }
-        .badge-paid { background: #dcfce7; color: #15803d; }
-        .badge-pending { background: #fff7ed; color: #c2410c; }
-        .badge-active { background: #eff6ff; color: #1d4ed8; }
-        .badge-completed { background: #f3f4f6; color: #6b7280; }
-
-        .dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          display: inline-block;
-        }
-        .dot-paid { background: #22c55e; }
-        .dot-pending { background: #f97316; }
-        .dot-active { background: #3b82f6; }
-        .dot-completed { background: #9ca3af; }
-
-        .action-btn {
-          padding: 5px 12px;
-          border-radius: 8px;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1px solid transparent;
-          transition: all 0.15s;
-          font-family: 'DM Sans', sans-serif;
-          width: 100%;
-          text-align: center;
-        }
-        .action-btn:hover { transform: translateY(-1px); }
-        .btn-pay { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-        .btn-pay:hover { background: #dcfce7; }
-        .btn-complete { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
-        .btn-complete:hover { background: #dbeafe; }
-        .btn-delete { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
-        .btn-delete:hover { background: #ffe4e6; }
-
-        .amount-cell {
-          font-family: 'DM Mono', monospace;
-          font-size: 13.5px;
-          font-weight: 500;
-          color: #1a1a1a;
-        }
-
-        .table-number {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 28px;
-          height: 28px;
-          border-radius: 8px;
-          background: #1a1a1a;
-          color: #fff;
-          font-size: 12px;
-          font-weight: 600;
-          margin-bottom: 3px;
-        }
-
-        .empty-state {
-          padding: 60px 20px;
-          text-align: center;
-          color: #aaa;
-        }
-        .empty-icon {
-          font-size: 36px;
-          margin-bottom: 10px;
-          opacity: 0.4;
-        }
-
-        .section-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 1.25rem;
-        }
-        .section-title {
-          font-size: 22px;
-          font-weight: 600;
-          color: #1a1a1a;
-          letter-spacing: -0.03em;
-        }
-        .section-sub {
-          font-size: 13px;
-          color: #999;
-          margin-top: 2px;
-        }
-        .refresh-btn {
-          padding: 8px 14px;
-          border-radius: 10px;
-          border: 1.5px solid #e2e0db;
-          background: #fff;
-          color: #555;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.15s;
-        }
-        .refresh-btn:hover { border-color: #bbb; color: #222; }
-      `}</style>
-
+    <div
+      style={{
+        padding: "25px",
+        background: "#f8f8f8",
+        minHeight: "100vh",
+      }}
+    >
       {/* HEADER */}
-      <div className="section-header">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+          flexWrap: "wrap",
+          gap: "10px",
+        }}
+      >
         <div>
-          <h1 className="section-title">Reservations</h1>
-          <p className="section-sub">{reservation.length} total bookings</p>
+          <h1
+            style={{
+              fontSize: "28px",
+              marginBottom: "5px",
+            }}
+          >
+            Reservations
+          </h1>
+
+          <p style={{ color: "#666" }}>
+            {reservation.length} total bookings
+          </p>
         </div>
-        <button className="refresh-btn" onClick={fetchReservation}>
-          ↻ Refresh
+
+        <button
+          onClick={fetchReservation}
+          style={{
+            padding: "10px 18px",
+            border: "none",
+            background: "black",
+            color: "white",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          Refresh
         </button>
       </div>
 
+      {/* SEARCH */}
+      <div
+        style={{
+          marginBottom: "20px",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search customer..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            padding: "12px",
+            width: "100%",
+            maxWidth: "350px",
+            borderRadius: "10px",
+            border: "1px solid #ddd",
+            outline: "none",
+          }}
+        />
+      </div>
+
       {/* FILTERS */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "1.5rem" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          flexWrap: "wrap",
+          marginBottom: "20px",
+        }}
+      >
         {filters.map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`admin-filter-btn ${filter === f ? "active" : "inactive"}`}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "30px",
+              border:
+                filter === f
+                  ? "1px solid black"
+                  : "1px solid #ddd",
+              background:
+                filter === f ? "black" : "white",
+              color:
+                filter === f ? "white" : "black",
+              cursor: "pointer",
+              fontWeight: "600",
+            }}
           >
-            <span>{filterIcons[f]}</span>
-            <span style={{ textTransform: "capitalize" }}>{f}</span>
-            <span className="filter-count">{filterCount(f)}</span>
+            {f} ({filterCount(f)})
           </button>
         ))}
       </div>
 
       {/* TABLE */}
-      <div style={{
-        background: "#fff",
-        borderRadius: "16px",
-        border: "1.5px solid #ede9e3",
-        overflow: "hidden",
-        overflowX: "auto",
-      }}>
-        <table className="res-table">
-          <thead>
+      <div
+        style={{
+          background: "white",
+          borderRadius: "15px",
+          overflowX: "auto",
+          border: "1px solid #eee",
+        }}
+      >
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+          }}
+        >
+          <thead
+            style={{
+              background: "#fafafa",
+            }}
+          >
             <tr>
-              <th>Customer</th>
-              <th>Booking</th>
-              <th>Table</th>
-              <th>Payment</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style={thStyle}>Customer</th>
+              <th style={thStyle}>Date</th>
+              <th style={thStyle}>Table</th>
+              <th style={thStyle}>Payment</th>
+              <th style={thStyle}>Amount</th>
+              <th style={thStyle}>Status</th>
+              <th style={thStyle}>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredData.map((r) => {
-              const initials = r.user?.name
-                ? r.user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-                : "?";
 
-              return (
+          <tbody>
+            {loading ? (
+              <tr>
+                <td
+                  colSpan="7"
+                  style={{
+                    textAlign: "center",
+                    padding: "40px",
+                  }}
+                >
+                  Loading...
+                </td>
+              </tr>
+            ) : filteredData.length > 0 ? (
+              filteredData.map((r) => (
                 <tr key={r._id}>
-                  {/* USER */}
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div className="user-avatar">{initials}</div>
-                      <div>
-                        <p style={{ fontWeight: 600, color: "#1a1a1a", margin: 0, fontSize: "13.5px" }}>{r.user?.name}</p>
-                        <p style={{ color: "#999", margin: "2px 0 0", fontSize: "11.5px" }}>{r.user?.email}</p>
-                        {r.user?.phone && (
-                          <p style={{ color: "#bbb", margin: "1px 0 0", fontSize: "11px" }}>{r.user?.phone}</p>
-                        )}
-                      </div>
+                  {/* CUSTOMER */}
+                  <td style={tdStyle}>
+                    <div>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {r?.user?.name || "No Name"}
+                      </p>
+
+                      <small style={{ color: "#666" }}>
+                        {r?.user?.email}
+                      </small>
                     </div>
                   </td>
 
-                  {/* BOOKING DATE/TIME */}
-                  <td>
-                    <p style={{ fontWeight: 500, color: "#1a1a1a", margin: 0 }}>{r.table?.date}</p>
-                    <p style={{ color: "#999", margin: "3px 0 0", fontSize: "12px" }}>{r.table?.time}</p>
+                  {/* DATE */}
+                  <td style={tdStyle}>
+                    <div>
+                      <p style={{ margin: 0 }}>
+                        {r?.date || "No Date"}
+                      </p>
+
+                      <small style={{ color: "#666" }}>
+                        {r?.time || ""}
+                      </small>
+                    </div>
                   </td>
 
-                  {/* TABLE INFO */}
-                  <td>
-                    <div className="table-number">{r.table?.tableNumber}</div>
-                    <p style={{ color: "#888", margin: "3px 0 0", fontSize: "12px" }}>{r.table?.seats} seats</p>
-                    {r.table?.label && (
-                      <span style={{
-                        fontSize: "11px",
-                        color: "#e76f51",
-                        fontWeight: 500,
-                        background: "#fff4f0",
-                        padding: "2px 7px",
-                        borderRadius: "99px",
-                        display: "inline-block",
-                        marginTop: "3px",
-                      }}>{r.table.label}</span>
-                    )}
+                  {/* TABLE */}
+                  <td style={tdStyle}>
+                    Table #{r?.tableNumber || "N/A"}
                   </td>
 
-                  {/* PAYMENT METHOD */}
-                  <td>
-                    <span style={{
-                      background: "#f5f4f1",
-                      color: "#555",
-                      padding: "4px 10px",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      textTransform: "capitalize",
-                    }}>{r.paymentMethod}</span>
+                  {/* PAYMENT */}
+                  <td style={tdStyle}>
+                    {r?.paymentMethod || "COD"}
                   </td>
 
                   {/* AMOUNT */}
-                  <td className="amount-cell">Rs. {r.totalAmount}</td>
+                  <td style={tdStyle}>
+                    Rs. {r?.totalAmount || 0}
+                  </td>
 
                   {/* STATUS */}
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                      <span className={`badge ${r.isPaid ? "badge-paid" : "badge-pending"}`}>
-                        <span className={`dot ${r.isPaid ? "dot-paid" : "dot-pending"}`}></span>
-                        {r.isPaid ? "Paid" : "Pending"}
+                  <td style={tdStyle}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "5px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: r.isPaid
+                            ? "green"
+                            : "orange",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {r.isPaid
+                          ? "Paid"
+                          : "Pending"}
                       </span>
-                      <span className={`badge ${r.status === "completed" ? "badge-completed" : "badge-active"}`}>
-                        <span className={`dot ${r.status === "completed" ? "dot-completed" : "dot-active"}`}></span>
-                        {r.status === "completed" ? "Completed" : "Active"}
+
+                      <span
+                        style={{
+                          color:
+                            r.status === "completed"
+                              ? "gray"
+                              : "blue",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {r.status || "active"}
                       </span>
                     </div>
                   </td>
 
                   {/* ACTIONS */}
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "5px", minWidth: "100px" }}>
+                  <td style={tdStyle}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
                       {!r.isPaid && (
-                        <button className="action-btn btn-pay" onClick={() => markAsPaid(r._id)}>
-                          ✓ Mark Paid
+                        <button
+                          onClick={() =>
+                            markAsPaid(r._id)
+                          }
+                          style={payBtn}
+                        >
+                          Mark Paid
                         </button>
                       )}
-                      {r.status === "active" && (
-                        <button className="action-btn btn-complete" onClick={() => markAsCompleted(r._id)}>
-                          ◎ Complete
+
+                      {r.status !== "completed" && (
+                        <button
+                          onClick={() =>
+                            markAsCompleted(r._id)
+                          }
+                          style={completeBtn}
+                        >
+                          Complete
                         </button>
                       )}
-                      <button className="action-btn btn-delete" onClick={() => deleteRes(r._id)}>
-                        ✕ Delete
+
+                      <button
+                        onClick={() =>
+                          deleteRes(r._id)
+                        }
+                        style={deleteBtn}
+                      >
+                        Delete
                       </button>
                     </div>
                   </td>
                 </tr>
-              );
-            })}
-
-            {filteredData.length === 0 && (
+              ))
+            ) : (
               <tr>
-                <td colSpan="7">
-                  <div className="empty-state">
-                    <div className="empty-icon">📋</div>
-                    <p style={{ margin: 0, fontWeight: 500, color: "#888" }}>No reservations found</p>
-                    <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#bbb" }}>Try a different filter</p>
-                  </div>
+                <td
+                  colSpan="7"
+                  style={{
+                    textAlign: "center",
+                    padding: "50px",
+                    color: "#999",
+                  }}
+                >
+                  No reservations found
                 </td>
               </tr>
             )}
@@ -445,6 +441,43 @@ const AdminTable = () => {
       </div>
     </div>
   );
+};
+
+// STYLES
+const thStyle = {
+  padding: "15px",
+  textAlign: "left",
+  borderBottom: "1px solid #eee",
+  fontSize: "14px",
+};
+
+const tdStyle = {
+  padding: "15px",
+  borderBottom: "1px solid #f2f2f2",
+};
+
+const payBtn = {
+  padding: "8px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#dcfce7",
+  cursor: "pointer",
+};
+
+const completeBtn = {
+  padding: "8px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#dbeafe",
+  cursor: "pointer",
+};
+
+const deleteBtn = {
+  padding: "8px",
+  border: "none",
+  borderRadius: "8px",
+  background: "#fee2e2",
+  cursor: "pointer",
 };
 
 export default AdminTable;

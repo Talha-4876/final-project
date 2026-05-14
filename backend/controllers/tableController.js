@@ -7,12 +7,18 @@ export const addTable = async (req, res) => {
     const { tableNumber, seats, label } = req.body;
 
     if (!tableNumber || !seats) {
-      return res.status(400).json({ success: false, message: "tableNumber and seats are required" });
+      return res.status(400).json({
+        success: false,
+        message: "tableNumber and seats are required",
+      });
     }
 
     const exists = await Table.findOne({ tableNumber });
     if (exists) {
-      return res.status(400).json({ success: false, message: "Table number already exists" });
+      return res.status(400).json({
+        success: false,
+        message: "Table number already exists",
+      });
     }
 
     const table = await Table.create({ tableNumber, seats, label });
@@ -48,15 +54,14 @@ export const getTablesWithStatus = async (req, res) => {
   try {
     const tables = await Table.find({ isActive: true }).sort({ tableNumber: 1 });
 
-    // ✅ Sirf "active" reservations fetch karo — completed tables available ho jayen
+    // Only fetch "active" reservations — completed tables become available again
     const reservations = await Reservation.find({ status: "active" });
 
-    // ✅ tableNumber se match karo — seats se nahi
+    // Match by tableNumber
     const tablesWithStatus = tables.map((t) => {
       const isBooked = reservations.some(
         (r) => r.table.tableNumber === t.tableNumber
       );
-
       return {
         _id: t._id,
         tableNumber: t.tableNumber,

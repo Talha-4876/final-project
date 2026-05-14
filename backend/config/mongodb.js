@@ -3,8 +3,12 @@ import mongoose from "mongoose";
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 60000,
+      socketTimeoutMS: 60000,
+      connectTimeoutMS: 60000,
+      heartbeatFrequencyMS: 30000,
+      retryWrites: true,
+      retryReads: true,
     });
 
     console.log("MongoDB connected ✅");
@@ -15,6 +19,5 @@ const connectDB = async () => {
 };
 
 export default connectDB;
-
 
 

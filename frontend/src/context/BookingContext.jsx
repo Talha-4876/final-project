@@ -1,3 +1,4 @@
+// src/context/BookingContext.jsx
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -8,7 +9,6 @@ export const BookingContext = createContext();
 const BookingProvider = ({ children }) => {
   const [bookings, setBookings] = useState([]);
 
-  // Fetch all reservations (for customer/admin)
   const fetchBookings = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/reservations/user`);
@@ -21,19 +21,21 @@ const BookingProvider = ({ children }) => {
     }
   };
 
-  // Add booking (customer side)
   const addBooking = async (booking, clearCartCallback) => {
     try {
+      // ✅ userId localStorage se nikal ke booking mein add karo
+      const userInfo = localStorage.getItem("userInfo");
+      const parsedUser = userInfo ? JSON.parse(userInfo) : null;
+      const userId = parsedUser?.id || parsedUser?._id || null;
+
       const res = await axios.post(
         `${backendUrl}/api/reservations/create`,
-        booking
+        { ...booking, userId } // ✅ userId bhi bhej rahe hain
       );
+
       if (res.data.success) {
         toast.success("Booking Confirmed 🎉");
-
-        // instant update (no reload)
         setBookings((prev) => [res.data.reservation, ...prev]);
-
         if (clearCartCallback) clearCartCallback();
       }
     } catch (err) {

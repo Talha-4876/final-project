@@ -20,7 +20,6 @@ import Menu from "./components/Menu";
 import Reviews from "./components/Reviews";
 import ChefSection from "./components/ChefSection";
 import GetInTouch from "./components/GetInTouch";
-import ChatSection from "./components/ChatSection";
 import Services from "./components/Services";
 import Work from "./components/Work";
 import OpeningHours from "./components/OpeningHours";
@@ -34,6 +33,12 @@ import TableBooking from "./pages/TableBooking";
 import Profile from "./pages/Profile";
 import Signup from "./components/Signup";
 import ProductDetail from "./pages/ProductDetail";
+import NotificationsPage from "./pages/NotificationsPage";
+
+/* ── NEW: Reservation + Payment pages ── */
+import ReservationCheckout from "./pages/ReservationCheckout";
+import ReservationSuccess  from "./pages/ReservationSuccess";
+import MyReservations      from "./pages/MyReservations";
 
 /* NOTIFICATION */
 import { Toaster } from "react-hot-toast";
@@ -63,15 +68,30 @@ const HomeWrapper = () => {
   return (
     <>
       <Hero />
-      <section id="about"><About /></section>
-      <section id="menu"><Menu /></section>
+
+      <section id="about">
+        <About />
+      </section>
+
+      <section id="menu">
+        <Menu />
+      </section>
+
       <Reviews />
       <ChefSection />
       <Services />
       <Work />
       <OpeningHours />
-      <ChatSection />
-      <GetInTouch />
+
+      {/* TABLE BOOKING */}
+      <section id="booking">
+        <TableBooking />
+      </section>
+
+      {/* CONTACT SECTION */}
+      <section id="contact">
+        <GetInTouch />
+      </section>
     </>
   );
 };
@@ -89,24 +109,105 @@ function App() {
 
             <Route path="/signup" element={<Signup />} />
 
-            <Route path="/" element={
-              <ProtectedRoute>
-                <HomeWrapper />
-              </ProtectedRoute>
-            } />
+            {/* ── Home ── */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <HomeWrapper />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="/product/:id" element={
-              <ProtectedRoute>
-                <ProductDetail />
-              </ProtectedRoute>
-            } />
+            {/* ── Products ── */}
+            <Route
+              path="/product/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductDetail />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-            <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-            <Route path="/tables" element={<ProtectedRoute><Tables /></ProtectedRoute>} />
-            <Route path="/book-table" element={<ProtectedRoute><TableBooking /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            {/* ── Cart & Delivery Checkout ── */}
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              }
+            />
 
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Tables ── */}
+            <Route
+              path="/tables"
+              element={
+                <ProtectedRoute>
+                  <Tables />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/book-table"
+              element={
+                <ProtectedRoute>
+                  <TableBooking />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Profile ── */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/notifications" element={<NotificationsPage />} />
+
+
+            {/* ── Reservation + Payment (NEW) ── */}
+            <Route
+              path="/reservation"
+              element={
+                <ProtectedRoute>
+                  <ReservationCheckout />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reservation-success"
+              element={
+                <ProtectedRoute>
+                  <ReservationSuccess />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/my-reservations"
+              element={
+                <ProtectedRoute>
+                  <MyReservations />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Fallback ── */}
             <Route path="*" element={<Navigate to="/" />} />
 
           </Routes>

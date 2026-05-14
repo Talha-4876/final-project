@@ -25,14 +25,11 @@ const Menu = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showAll, setShowAll] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(280);
 
-  // ================= FETCH PRODUCTS =================
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await axios.get(`${backendUrl}/api/product/list`);
-
         if (res.data?.success && Array.isArray(res.data.products)) {
           setProducts(res.data.products);
         } else {
@@ -45,41 +42,19 @@ const Menu = () => {
         setLoading(false);
       }
     };
-
     fetchProducts();
   }, []);
 
-  // ================= EXCHANGE RATE =================
-  useEffect(() => {
-    const fetchRate = async () => {
-      try {
-        const res = await axios.get("https://open.er-api.com/v6/latest/USD");
-        if (res.data?.rates?.PKR) {
-          setExchangeRate(res.data.rates.PKR);
-        }
-      } catch (err) {
-        console.error("Failed to fetch exchange rate:", err);
-      }
-    };
-
-    fetchRate();
-  }, []);
-
-  // ================= FILTER =================
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       if (!p) return false;
-
       const category = p.category?.toLowerCase?.() || "";
       const name = p.name?.toLowerCase?.() || "";
       const search = searchQuery?.toLowerCase?.() || "";
-
       const matchesCategory =
         selectedCategory === "all" || category === selectedCategory;
-
       const matchesSearch =
         !search || name.includes(search) || category.includes(search);
-
       return matchesCategory && matchesSearch;
     });
   }, [products, selectedCategory, searchQuery]);
@@ -88,50 +63,33 @@ const Menu = () => {
     ? filteredProducts
     : filteredProducts.slice(0, 8);
 
-  // ================= LOADING =================
   if (loading) {
-    return (
-      <div className="text-center py-20 text-gray-500">
-        Loading Menu...
-      </div>
-    );
+    return <div className="text-center py-20 text-gray-500">Loading Menu...</div>;
   }
 
   return (
-    <section
-      className="py-12 px-6 bg-gray-50 scroll-mt-24"
-      id="menu"
-    >
-      {/* ================= CATEGORY ================= */}
+    <section className="py-12 px-6 bg-gray-50 scroll-mt-24" id="menu">
+
+      {/* CATEGORY BUTTONS */}
       <div className="flex flex-wrap gap-4 justify-center mb-8">
         {categories.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => {
-              setSelectedCategory(cat.slug);
-              setShowAll(false);
-            }}
-            className={`
-              w-24 h-24 flex items-center justify-center
-              rounded-full font-semibold text-sm
-              transition-all duration-300 shadow-md
-              ${
-                selectedCategory === cat.slug
-                  ? "bg-orange-400 text-white scale-110 shadow-lg"
-                  : "bg-gray-100 text-gray-700 hover:bg-orange-400 hover:text-white hover:scale-105 cursor-pointer"
-              }
-            `}
+            onClick={() => { setSelectedCategory(cat.slug); setShowAll(false); }}
+            className={`w-24 h-24 flex items-center justify-center rounded-full font-semibold text-sm transition-all duration-300 shadow-md ${
+              selectedCategory === cat.slug
+                ? "bg-orange-400 text-white scale-110 shadow-lg"
+                : "bg-gray-100 text-gray-700 hover:bg-orange-400 hover:text-white hover:scale-105 cursor-pointer"
+            }`}
           >
             {cat.title}
           </button>
         ))}
       </div>
 
-      {/* ================= PRODUCTS ================= */}
+      {/* PRODUCTS GRID */}
       {filteredProducts.length === 0 ? (
-        <div className="text-center text-gray-500 py-20">
-          No products found.
-        </div>
+        <div className="text-center text-gray-500 py-20">No products found.</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {visibleProducts.map((item) => (
@@ -141,20 +99,29 @@ const Menu = () => {
               addToCart={addToCart}
               removeFromCart={removeFromCart}
               getQuantity={getQuantity}
-              exchangeRate={exchangeRate}
             />
           ))}
         </div>
       )}
 
-      {/* ================= VIEW MORE ================= */}
-      {!showAll && filteredProducts.length > 8 && (
+      {/* VIEW MORE / VIEW LESS BUTTON */}
+      {filteredProducts.length > 8 && (
         <div className="flex justify-center mt-10">
           <button
-            onClick={() => setShowAll(true)}
-            className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition"
+            onClick={() => setShowAll((prev) => !prev)}
+            className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition flex items-center gap-2"
           >
-            View More
+            {showAll ? (
+              <>
+                View Less
+                <span className="text-lg leading-none">↑</span>
+              </>
+            ) : (
+              <>
+                View More
+                <span className="text-lg leading-none">↓</span>
+              </>
+            )}
           </button>
         </div>
       )}

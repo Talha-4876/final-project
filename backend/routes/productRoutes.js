@@ -6,20 +6,34 @@ import {
   addProductReview,
   getProductReviews,
   deleteProduct,
-  updateProduct, // ✅ import updateProduct
+  updateProduct,
 } from "../controllers/productController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminAuth from "../middleware/adminAuth.js";
-import upload from "../config/multer.js"; 
+import upload from "../config/multer.js";
 
 const router = express.Router();
 
 // Add Product (Admin + Image Upload)
 router.post("/add", authMiddleware, adminAuth, upload.single("image"), addProduct);
 
-// Update Product (Admin + Image Upload)
-router.put("/update/:id", authMiddleware, adminAuth, upload.single("image"), updateProduct);
+// ✅ Update Product — multer optional, handles both JSON and multipart
+router.put(
+  "/update/:id",
+  authMiddleware,
+  adminAuth,
+  (req, res, next) => {
+    // Agar multipart/form-data ho toh multer use karo, warna skip
+    const contentType = req.headers["content-type"] || "";
+    if (contentType.includes("multipart/form-data")) {
+      upload.single("image")(req, res, next);
+    } else {
+      next();
+    }
+  },
+  updateProduct
+);
 
 // Get All Products / Menu
 router.get("/list", listProducts);

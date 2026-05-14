@@ -1,5 +1,9 @@
 import express from "express";
 import Delivery from "../models/Delivery.js";
+import {
+  notifyOrderPlaced,
+  notifyPaymentSuccess,
+} from "../utils/notificationHelper.js";
 
 const router = express.Router();
 
@@ -22,22 +26,25 @@ router.post("/create", async (req, res) => {
       deliveryInstructions,
       paymentMethod,
       cartItems,
-      deliveryCharge
+      deliveryCharge,
+      userId, // ✅ frontend se aayega
     } = req.body;
 
     if (!name || !phone || !city || !address || !cartItems || cartItems.length === 0) {
       return res.status(400).json({ success: false, message: "Required fields missing" });
     }
 
-    const cartUSD = cartItems.map(item => ({
+    const cartUSD = cartItems.map((item) => ({
       ...item,
-      price: parseFloat((item.price * PKR_TO_USD).toFixed(2))
+      price: parseFloat((item.price * PKR_TO_USD).toFixed(2)),
     }));
 
     const deliveryUSD = parseFloat((deliveryCharge * PKR_TO_USD).toFixed(2));
 
     const totalUSD = parseFloat(
-      (cartUSD.reduce((acc, i) => acc + i.price * i.quantity, 0) + deliveryUSD).toFixed(2)
+      (
+        cartUSD.reduce((acc, i) => acc + i.price * i.quantity, 0) + deliveryUSD
+      ).toFixed(2)
     );
 
     const newDelivery = new Delivery({
@@ -54,23 +61,31 @@ router.post("/create", async (req, res) => {
       cartItems: cartUSD,
       deliveryCharge: deliveryUSD,
       totalAmount: totalUSD,
-      status: "Pending"
+      status: "Pending",
     });
 
     await newDelivery.save();
 
+    // ✅ User ko notifications bhejo agar userId mile
+    if (userId) {
+      await notifyOrderPlaced(userId, newDelivery._id, totalUSD);
+
+      // Card payment pe payment success notification bhi bhejo
+      if (paymentMethod === "card") {
+        await notifyPaymentSuccess(userId, newDelivery._id, totalUSD);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: "Order created successfully",
-      order: newDelivery
+      order: newDelivery,
     });
-
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
   }
 });
-
 
 // =========================
 // GET ALL ORDERS
@@ -83,7 +98,6 @@ router.get("/all", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-
 
 // =========================
 // UPDATE STATUS
@@ -103,7 +117,6 @@ router.put("/status/:id", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-
 
 // =========================
 // DELETE ORDER

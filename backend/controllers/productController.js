@@ -1,10 +1,10 @@
 // controllers/productController.js
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
-import { cloudinary } from "../config/cloudinary.js"; // ✅ crash-free
+import { cloudinary } from "../config/cloudinary.js";
 import fs from "fs";
 
-// List all products (PKR only)
+// List all products
 export const listProducts = async (req, res) => {
   try {
     const products = await Product.find();
@@ -18,7 +18,7 @@ export const listProducts = async (req, res) => {
 // Add Product
 export const addProduct = async (req, res) => {
   try {
-    const { name, description, price, category } = req.body;
+    const { name, description, price, category, discountPercent } = req.body;
 
     if (!name || !price || !category)
       return res.status(400).json({ success: false, message: "Name, price and category required" });
@@ -27,7 +27,7 @@ export const addProduct = async (req, res) => {
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, { folder: "menu" });
       imageUrl = result.secure_url;
-      fs.unlinkSync(req.file.path); // remove temp file
+      fs.unlinkSync(req.file.path);
     }
 
     const product = await Product.create({
@@ -36,6 +36,7 @@ export const addProduct = async (req, res) => {
       price,
       category,
       image: imageUrl,
+      discountPercent: discountPercent !== undefined ? Number(discountPercent) : 0,
     });
 
     res.json({ success: true, message: "Product added successfully", product });
@@ -49,27 +50,40 @@ export const addProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, category } = req.body;
+    const { name, description, price, category, discountPercent } = req.body;
+
+    console.log("REQ BODY:", req.body);
+    console.log("discountPercent received:", discountPercent);
 
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ success: false, message: "Invalid product ID" });
 
-    const product = await Product.findById(id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price) updateData.price = Number(price);
+    if (category) updateData.category = category;
+    updateData.discountPercent = discountPercent !== undefined ? Number(discountPercent) : 0;
 
-    // Update fields
-    if (name) product.name = name;
-    if (description) product.description = description;
-    if (price) product.price = price;
-    if (category) product.category = category;
+    console.log("updateData being saved:", updateData);
 
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, { folder: "menu" });
-      product.image = result.secure_url;
+      updateData.image = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
 
-    await product.save();
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: false, strict: false }
+    );
+
+    console.log("Updated product discountPercent:", product?.discountPercent);
+
+    if (!product)
+      return res.status(404).json({ success: false, message: "Product not found" });
+
     res.json({ success: true, message: "Product updated successfully", product });
   } catch (err) {
     console.error("Update product error:", err);
@@ -81,7 +95,8 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    if (!product)
+      return res.status(404).json({ success: false, message: "Product not found" });
     res.json({ success: true, message: "Product deleted successfully" });
   } catch (err) {
     console.error("Delete product error:", err);
@@ -97,7 +112,8 @@ export const getProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid product ID" });
 
     const product = await Product.findById(id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    if (!product)
+      return res.status(404).json({ success: false, message: "Product not found" });
 
     res.json({ success: true, product });
   } catch (err) {
@@ -113,7 +129,8 @@ export const addProductReview = async (req, res) => {
     const user = req.user;
 
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    if (!product)
+      return res.status(404).json({ success: false, message: "Product not found" });
 
     product.reviews.push({
       userId: user._id,
@@ -134,7 +151,8 @@ export const addProductReview = async (req, res) => {
 export const getProductReviews = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    if (!product)
+      return res.status(404).json({ success: false, message: "Product not found" });
 
     res.json({ success: true, reviews: product.reviews || [] });
   } catch (err) {

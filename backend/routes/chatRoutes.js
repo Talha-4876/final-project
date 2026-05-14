@@ -1,191 +1,425 @@
 import express from "express";
-import axios from "axios";
 import Product from "../models/Product.js";
+import Table from "../models/tableModel.js";
+import Reservation from "../models/reservationModels.js";
+import Delivery from "../models/Delivery.js";
+import Order from "../models/orderModel.js";
 
 const router = express.Router();
 
-// Learned words mapping
+// ═══════════════════════════════════════════════════════════════
+//  WORD NORMALIZATION
+// ═══════════════════════════════════════════════════════════════
 const learnedWords = {
-  surprise: "sprite",
-  "coca cola": "coca-cola",
   coke: "coca-cola",
-  dew: "dew",
+  "coca cola": "coca-cola",
+  surprise: "sprite",
+  dew: "mountain dew",
+  piza: "pizza",
+  barger: "burger",
+  tabel: "table",
+  tabels: "tables",
+  resrvation: "reservation",
+  delivry: "delivery",
+  dilievery: "delivery",
 };
 
-// Normalize text (case-insensitive, remove extra spaces, map learned words)
-const normalizeText = (text) => {
-  text = text.toLowerCase().trim();
-  for (let key in learnedWords) {
-    const regex = new RegExp(key, "gi");
-    text = text.replace(regex, learnedWords[key]);
+const normalize = (text) => {
+  let t = text.toLowerCase().trim();
+  for (const [key, val] of Object.entries(learnedWords)) {
+    t = t.replace(new RegExp(`\\b${key}\\b`, "gi"), val);
   }
-  text = text.replace(/\s+/g, " ");
-  return text;
+  return t.replace(/\s+/g, " ");
 };
 
-// Detect language (simple heuristic)
-const detectLanguage = (text) => {
-  const enWords = ["price", "cost", "rate", "menu", "kitni", "total", "best", "recommend", "top"];
-  return enWords.some((w) => text.toLowerCase().includes(w)) ? "en" : "ur";
+// ═══════════════════════════════════════════════════════════════
+//  LANGUAGE DETECTION
+// ═══════════════════════════════════════════════════════════════
+const detectLang = (text) => {
+  const urduHints = [
+    "kya","kitna","kitni","karo","hai","hain","dikhao","chahiye",
+    "mujhe","mein","ka","ki","ko","hon","hn","kitney","batao",
+    "bata","koi","nahi","abhi","wala","walay",
+  ];
+  const t = text.toLowerCase();
+  return urduHints.filter((w) => t.includes(w)).length >= 2 ? "ur" : "en";
 };
 
-// Safe AI fallback
-const getAIResponse = async (prompt) => {
-  try {
-    if (!process.env.GEMINI_API_KEY) return null;
-    const res = await axios.post(
-      "https://api.lms.ai/v1/generate",
-      { prompt, max_output_tokens: 100 },
-      { headers: { Authorization: `Bearer ${process.env.GEMINI_API_KEY}` } }
-    );
-    return res.data.output_text;
-  } catch (err) {
-    console.log("AI failed ❌", err.message);
-    return null;
-  }
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════
+const badge = (ok) => (ok ? "✅" : "❌");
+
+const getCategory = (name) => {
+  const n = normalize(name);
+  if (n.includes("pizza")) return "🍕 Pizza";
+  if (n.includes("burger")) return "🍔 Burgers";
+  if (["cola","sprite","dew","drink","lassi","juice","water","coffee","tea","chai"].some((k) => n.includes(k)))
+    return "🥤 Drinks";
+  if (["halwa","pori","nashta","paratha","nihari","karahi","biryani","rice","pulao"].some((k) => n.includes(k)))
+    return "🍽️ Desi Items";
+  if (["cake","dessert","brownie","pastry","sweet"].some((k) => n.includes(k)))
+    return "🍰 Desserts";
+  return "🍽️ Other";
 };
 
-// Parse quantities and products from message
 const parseOrder = (msg, products) => {
+  const parts = msg.split(/,|\s+and\s+|\s+or\s+|\s+aur\s+/gi);
   const order = [];
-  const parts = msg.split(/or|,/gi); // split by 'or' or ','
-
-  for (let part of parts) {
-    const match = part.match(/(\d+)?\s*(.+)/); // optional number + product
+  for (const part of parts) {
+    const match = part.trim().match(/^(\d+)?\s*(.+)$/);
     if (!match) continue;
-
-    let qty = parseInt(match[1]) || 1; // default 1 if not specified
-    let name = normalizeText(match[2].trim());
-
+    const qty = parseInt(match[1]) || 1;
+    const query = normalize(match[2].trim());
     const product = products.find(
-      (p) => normalizeText(p.name) === name && p.available
+      (p) =>
+        normalize(p.name) === query ||
+        normalize(p.name).includes(query) ||
+        query.includes(normalize(p.name))
     );
-
     if (product) order.push({ product, qty });
   }
-
   return order;
 };
 
-// Flexible top item keywords
-const topItemKeywords = ["best", "top", "recommend", "zayada sale", "sab se zayada"];
+const hasAny = (msg, keywords) => keywords.some((k) => msg.includes(k));
 
+// ═══════════════════════════════════════════════════════════════
+//  INTENT KEYWORDS
+// ═══════════════════════════════════════════════════════════════
+const TABLE_KEYWORDS    = ["table","seat","jagah","baithna","baith","tables","kitney table","mez"];
+const BOOKING_KEYWORDS  = ["reservation","book","reserve","booking","reserve karo","book karo","jagah book","seat book"];
+const DELIVERY_KEYWORDS = ["delivery","deliver","ghar","home deliver","order deliver","ghar bhejo","deliver karo","home delivery"];
+const ORDER_KEYWORDS    = ["order status","mera order","my order","order kahan","order track","order dekho"];
+const WAITER_KEYWORDS   = ["waiter","waiter bulao","call waiter","staff bulao","help chahiye","koi hai","service chahiye","attendant"];
+const SPECIAL_KEYWORDS  = ["birthday","anniversary","special","decoration","surprise","event","dawat","party","celebration"];
+const MENU_KEYWORDS     = ["menu","items","kya kya","kya hai","list","sab kuch","show menu","dikhao","tamam","poora"];
+const BEST_KEYWORDS     = ["best","top","recommend","popular","famous","sab se acha","zayada sale","most ordered"];
+const THANKS_KEYWORDS   = ["shukriya","thanks","thank you","jazakallah","mehrbani","theek hai shukriya"];
+const GREETING_RE       = /^(hello|hi|hey|salam|assalam|assalamualaikum|helo|hii|aoa|walaikum)/;
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN ROUTE
+// ═══════════════════════════════════════════════════════════════
 router.post("/", async (req, res) => {
   try {
-    const { message } = req.body;
-    if (!message) return res.json({ reply: "Message required" });
+    const raw = req.body?.message;
+    if (!raw) return res.json({ reply: "Message required." });
 
-    const msg = normalizeText(message);
-    const lang = detectLanguage(msg);
-    const products = await Product.find();
+    const msg  = normalize(raw);
+    const lang = detectLang(msg);
 
-    // 1️⃣ Check for quantity-based order total
-    const orderItems = parseOrder(msg, products);
-    if (orderItems.length > 0) {
-      let reply = "🧾 Order Details:\n";
-      let total = 0;
+    // Fetch all DB data in parallel
+    const [products, tables, reservations, deliveries] = await Promise.all([
+      Product.find(),
+      Table.find({ isActive: true }),
+      Reservation.find({ status: "active" }),
+      Delivery.find(),
+    ]);
 
-      for (let item of orderItems) {
-        const price = item.product.price * item.qty;
-        reply += `${item.qty} x ${item.product.name} = Rs.${price}\n`;
-        total += price;
+    const availableProducts = products.filter((p) => p.available);
+
+    // ── 1. GREETING ─────────────────────────────────────────
+    if (GREETING_RE.test(msg)) {
+      return res.json({
+        reply:
+          "Assalam o Alaikum! 🍽️ BiteBoss mein khush aamdeed!\n\n" +
+          "Main aapki in cheezon mein madad kar sakta hoon:\n" +
+          "• 📋 Menu dekhna\n" +
+          "• 💰 Item ki price\n" +
+          "• 🪑 Tables ka status\n" +
+          "• 📅 Reservation info\n" +
+          "• 🚚 Delivery info\n" +
+          "• 🧾 Order ka total\n" +
+          "• 🔔 Waiter bulana\n\n" +
+          "Batayein kia chahiye? 😊",
+      });
+    }
+
+    // ── 2. THANKS ────────────────────────────────────────────
+    if (hasAny(msg, THANKS_KEYWORDS)) {
+      return res.json({
+        reply: "Khushi hui aapki madad karke! 😊\nKoi aur sawaal ho to zaroor poochhein. Apka din mubarak ho! 🌟",
+      });
+    }
+
+    // ── 3. SPECIAL / EVENT ───────────────────────────────────
+    if (hasAny(msg, SPECIAL_KEYWORDS)) {
+      return res.json({
+        reply:
+          "🎉 Special Occasion ke liye hum tayaar hain!\n\n" +
+          "Hum arrange kar saktay hain:\n" +
+          "• 🎂 Birthday decoration\n" +
+          "• 💐 Anniversary setup\n" +
+          "• 🎊 Private event / dawat\n" +
+          "• 🎁 Surprise arrangements\n\n" +
+          "📞 Call karein: 0300-0000000\n" +
+          "📩 Ya website par Contact form bhar dein.\n\n" +
+          "Hum aapka special din yaadgar bana denge! ✨",
+      });
+    }
+
+    // ── 4. WAITER / HELP ─────────────────────────────────────
+    if (hasAny(msg, WAITER_KEYWORDS)) {
+      return res.json({
+        reply:
+          "🔔 Waiter Alert!\n\n" +
+          "Aapki request register ho gayi. Staff abhi aapke paas aa raha hai.\n\n" +
+          "Agar urgent ho:\n" +
+          "📞 0300-0000000\n\n" +
+          "Shukriya aapki patience ke liye! 🙏",
+      });
+    }
+
+    // ── 5. TABLE STATUS ──────────────────────────────────────
+    if (hasAny(msg, TABLE_KEYWORDS) && !hasAny(msg, BOOKING_KEYWORDS)) {
+      if (tables.length === 0) {
+        return res.json({ reply: "Abhi koi table registered nahi hai. Admin se contact karein.\n📞 0300-0000000" });
       }
 
-      reply += `\n💰 Total: Rs.${total}`;
+      const bookedNums = new Set(reservations.map((r) => r.table?.tableNumber));
+      const freeTables  = tables.filter((t) => !bookedNums.has(t.tableNumber));
+      const busyTables  = tables.filter((t) => bookedNums.has(t.tableNumber));
+
+      let reply = `🪑 Tables Status (Total: ${tables.length})\n\n`;
+
+      if (freeTables.length > 0) {
+        reply += `✅ Available (${freeTables.length}):\n`;
+        freeTables.forEach((t) => {
+          reply += `• Table ${t.tableNumber} — ${t.seats} seats${t.label ? ` (${t.label})` : ""}\n`;
+        });
+      } else {
+        reply += "❌ Abhi koi table available nahi hai.\n";
+      }
+
+      if (busyTables.length > 0) {
+        reply += `\n🔴 Booked (${busyTables.length}):\n`;
+        busyTables.forEach((t) => {
+          const r = reservations.find((rv) => rv.table?.tableNumber === t.tableNumber);
+          reply += `• Table ${t.tableNumber} — ${t.seats} seats${t.label ? ` (${t.label})` : ""}`;
+          if (r) reply += ` → ${r.user?.name || "Guest"} | ${r.table?.date} ${r.table?.time}`;
+          reply += "\n";
+        });
+      }
+
+      if (freeTables.length > 0) {
+        reply += `\nReservation ke liye likhein: "table book karna hai" 📅`;
+      }
       return res.json({ reply });
     }
 
-    // 2️⃣ Check for BEST / TOP item request (any phrasing)
-    if (topItemKeywords.some((k) => msg.includes(k))) {
-      const available = products.filter((p) => p.available);
-      if (available.length === 0) return res.json({ reply: "No item available right now." });
+    // ── 6. RESERVATION INFO ──────────────────────────────────
+    if (hasAny(msg, BOOKING_KEYWORDS)) {
+      const bookedNums = new Set(reservations.map((r) => r.table?.tableNumber));
+      const freeTables = tables.filter((t) => !bookedNums.has(t.tableNumber));
 
-      // For example, top item by price
-      const best = available.sort((a, b) => b.price - a.price)[0];
-      return res.json({ reply: `🔥 Best item: ${best.name} (Rs.${best.price})` });
-    }
-
-    // 3️⃣ CATEGORY MENU request
-    const categoryKeywords = ["pizza", "burger", "drink"];
-    const clickedCategory = categoryKeywords.find((c) => msg.includes(c));
-    if (clickedCategory) {
-      const items = products.filter((p) =>
-        normalizeText(p.name).includes(clickedCategory)
-      );
-      if (items.length === 0) return res.json({ reply: `No ${clickedCategory} available.` });
-
-      const list = items.map((i) => `• ${i.name} - Rs.${i.price}`).join("\n");
-      return res.json({ reply: `📋 ${clickedCategory.toUpperCase()} MENU:\n\n${list}` });
-    }
-
-    // 4️⃣ GENERAL MENU request
-    const menuKeywords = ["menu", "items", "kya kya hai", "kya hai", "list"];
-    if (menuKeywords.some((k) => msg.includes(k))) {
-      const availableProducts = products.filter((p) => p.available);
-      if (availableProducts.length === 0)
+      if (freeTables.length === 0) {
         return res.json({
-          reply: lang === "en"
-            ? "No items are available right now."
-            : "Filhal koi item available nahi hai.",
+          reply:
+            "😔 Abhi koi table available nahi hai reservation ke liye.\n\n" +
+            "Kuch der baad try karein ya call karein:\n" +
+            "📞 0300-0000000",
         });
+      }
 
-      const categories = { "🍕 Pizza": [], "🍔 Burgers": [], "🥤 Drinks": [], "🍽️ Other": [] };
-      availableProducts.forEach((p) => {
-        const name = normalizeText(p.name);
-        if (name.includes("pizza")) categories["🍕 Pizza"].push(p);
-        else if (name.includes("burger")) categories["🍔 Burgers"].push(p);
-        else if (name.includes("cola") || name.includes("sprite") || name.includes("drink") || name.includes("dew"))
-          categories["🥤 Drinks"].push(p);
-        else categories["🍽️ Other"].push(p);
+      let reply = `📅 Table Reservation\n\n`;
+      reply += `✅ ${freeTables.length} tables available hain abhi:\n`;
+      freeTables.forEach((t) => {
+        reply += `• Table ${t.tableNumber} — ${t.seats} seats${t.label ? ` (${t.label})` : ""}\n`;
       });
-
-      let menuText = lang === "en" ? "📋 Our Menu:\n\n" : "📋 Bite Boss Menu:\n\n";
-      for (let category in categories) {
-        if (categories[category].length > 0) {
-          menuText += `${category}\n`;
-          categories[category].forEach((item) => {
-            menuText += `• ${item.name} - Rs.${item.price}\n`;
-          });
-          menuText += "\n";
-        }
-      }
-
-      return res.json({ reply: menuText });
+      reply +=
+        "\nReservation ke liye:\n" +
+        "🌐 Website par Tables section mein jayein\n" +
+        "📞 Ya call karein: 0300-0000000\n\n" +
+        "Apna naam, date, time batayein! 😊";
+      return res.json({ reply });
     }
 
-    // 5️⃣ Check for single product price / availability
-    let foundItem = products.find((p) => msg.includes(normalizeText(p.name)));
-    if (!foundItem) {
-      for (let key in learnedWords) {
-        if (msg.includes(key)) {
-          const name = learnedWords[key];
-          foundItem = products.find((p) => normalizeText(p.name) === name);
-          if (foundItem) break;
-        }
-      }
-    }
+    // ── 7. DELIVERY INFO ─────────────────────────────────────
+    if (hasAny(msg, DELIVERY_KEYWORDS)) {
+      const pending    = deliveries.filter((d) => d.status === "Pending").length;
+      const delivered  = deliveries.filter((d) => d.status === "Delivered").length;
+      const processing = deliveries.filter((d) => d.status === "Processing").length;
 
-    if (foundItem) {
       return res.json({
-        reply: foundItem.available
-          ? `${foundItem.name} available hai aur price Rs.${foundItem.price} hai`
-          : `${foundItem.name} abhi available nahi hai.`,
+        reply:
+          `🚚 Delivery Information\n\n` +
+          `📦 Pending Orders: ${pending}\n` +
+          `⚙️  Processing: ${processing}\n` +
+          `✅ Delivered: ${delivered}\n\n` +
+          `Delivery order karne ke liye:\n` +
+          `🌐 Website → Order Now section\n` +
+          `📞 Call: 0300-0000000\n\n` +
+          `🛵 Delivery charge aur time area ke mutabiq vary karta hai.`,
       });
     }
 
-    // 6️⃣ Fallback AI / Suggestions
-    const availableProducts = products.filter((p) => p.available);
-    const suggestions = availableProducts.map((p) => p.name).slice(0, 5).join(", ");
-    const friendlyReply =
-      lang === "en"
-        ? `Sorry, this item is not available. You can try: ${suggestions}`
-        : `Maaf kijiye, ye item available nahi hai. Aap yeh try kar sakte hain: ${suggestions}`;
+    // ── 8. ORDER STATUS ──────────────────────────────────────
+    if (hasAny(msg, ORDER_KEYWORDS)) {
+      return res.json({
+        reply:
+          "🧾 Order Track Karne Ke Liye:\n\n" +
+          "1️⃣ Website par apne account mein login karein\n" +
+          "2️⃣ 'My Orders' section mein jayein\n" +
+          "3️⃣ Apna latest order status dekhein\n\n" +
+          "📞 Direct bhi call kar saktay hain: 0300-0000000\n" +
+          "Order ID ready rakhein! 📋",
+      });
+    }
 
-    const aiReply = await getAIResponse(msg);
-    return res.json({ reply: aiReply ? `${friendlyReply}\n${aiReply}` : friendlyReply });
+    // ── 9. FULL MENU ─────────────────────────────────────────
+    if (hasAny(msg, MENU_KEYWORDS)) {
+      if (availableProducts.length === 0) {
+        return res.json({ reply: "Filhal koi item available nahi hai." });
+      }
+      const grouped = {};
+      for (const p of availableProducts) {
+        const cat = getCategory(p.name);
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(p);
+      }
+      let reply = "📋 BiteBoss Full Menu:\n\n";
+      for (const [cat, items] of Object.entries(grouped)) {
+        reply += `${cat}\n`;
+        items.forEach((i) => (reply += `• ${i.name} — Rs.${i.price}\n`));
+        reply += "\n";
+      }
+      reply += "Kisi bhi item ki price ya order total poochhein! 😊";
+      return res.json({ reply });
+    }
+
+    // ── 10. CATEGORY MENU ────────────────────────────────────
+    const categoryMap = {
+      pizza:   { icon: "🍕", label: "Pizza" },
+      burger:  { icon: "🍔", label: "Burger" },
+      drink:   { icon: "🥤", label: "Drinks" },
+      coffee:  { icon: "☕", label: "Coffee" },
+      chai:    { icon: "☕", label: "Chai" },
+      cake:    { icon: "🍰", label: "Desserts" },
+      dessert: { icon: "🍰", label: "Desserts" },
+      nashta:  { icon: "🍳", label: "Nashta" },
+      biryani: { icon: "🍛", label: "Biryani" },
+      karahi:  { icon: "🍛", label: "Karahi" },
+      paratha: { icon: "🫓", label: "Paratha" },
+    };
+
+    for (const [key, { icon, label }] of Object.entries(categoryMap)) {
+      if (msg.includes(key) && !msg.match(/\d/)) {
+        const items = products.filter(
+          (p) =>
+            normalize(p.name).includes(key) ||
+            normalize(p.category || "").includes(key) ||
+            getCategory(p.name).toLowerCase().includes(label.toLowerCase())
+        );
+        if (items.length === 0)
+          return res.json({ reply: `Abhi ${label} available nahi hai.\n\nPoora menu: "menu dikhao"` });
+
+        let reply = `${icon} ${label} Menu:\n\n`;
+        items.forEach(
+          (i) => (reply += `${badge(i.available)} ${i.name} — Rs.${i.price}${!i.available ? " (Unavailable)" : ""}\n`)
+        );
+        return res.json({ reply });
+      }
+    }
+
+    // ── 11. BEST ITEM ────────────────────────────────────────
+    if (hasAny(msg, BEST_KEYWORDS)) {
+      if (!availableProducts.length) return res.json({ reply: "Abhi koi item available nahi hai." });
+      const top = [...availableProducts].sort((a, b) => b.price - a.price)[0];
+      return res.json({
+        reply:
+          `🔥 Hamara Best Pick:\n\n` +
+          `${top.name}\n` +
+          `💰 Price: Rs.${top.price}\n` +
+          `${top.description ? `📝 ${top.description}\n` : ""}` +
+          `\nKitne chahiye? e.g. "2 ${top.name}" 😋`,
+      });
+    }
+
+    // ── 12. MULTI-ITEM ORDER ─────────────────────────────────
+    const orderItems = parseOrder(msg, products);
+    if (orderItems.length > 1) {
+      let reply  = "🧾 Order Summary:\n\n";
+      let total  = 0;
+      const unavail = [];
+      for (const { product, qty } of orderItems) {
+        if (!product.available) { unavail.push(product.name); continue; }
+        const sub = product.price * qty;
+        reply += `${qty} × ${product.name} = Rs.${sub}\n`;
+        total += sub;
+      }
+      if (unavail.length) reply += `\n⚠️ Unavailable: ${unavail.join(", ")}`;
+      reply += `\n💰 Grand Total: Rs.${total}`;
+      return res.json({ reply });
+    }
+
+    // ── 13. SINGLE ITEM + QUANTITY ───────────────────────────
+    const qtyMatch = msg.match(/^(\d+)\s+(.+)$/);
+    if (qtyMatch) {
+      const qty   = parseInt(qtyMatch[1]);
+      const query = normalize(qtyMatch[2].trim());
+      const found = products.find(
+        (p) => normalize(p.name).includes(query) || query.includes(normalize(p.name))
+      );
+      if (found) {
+        if (!found.available)
+          return res.json({ reply: `❌ ${found.name} abhi available nahi hai. Koi aur item try karein!` });
+        return res.json({
+          reply: `🧾 Order:\n\n${qty} × ${found.name} = Rs.${found.price * qty}\n\n💰 Total: Rs.${found.price * qty}`,
+        });
+      }
+    }
+
+    // ── 14. SINGLE ITEM LOOKUP ───────────────────────────────
+    let foundItem = products.find((p) => msg.includes(normalize(p.name)));
+    if (!foundItem) {
+      for (const [alias, canonical] of Object.entries(learnedWords)) {
+        if (msg.includes(alias)) {
+          const f = products.find((p) => normalize(p.name) === canonical);
+          if (f) { foundItem = f; break; }
+        }
+      }
+    }
+    if (foundItem) {
+      if (!foundItem.available) {
+        const suggestions = availableProducts.slice(0, 3).map((p) => p.name).join(", ");
+        return res.json({ reply: `❌ ${foundItem.name} abhi available nahi hai.\n\nYeh try karein: ${suggestions}` });
+      }
+      return res.json({
+        reply:
+          `✅ ${foundItem.name} available hai!\n` +
+          `💰 Price: Rs.${foundItem.price}\n` +
+          `${foundItem.description ? `📝 ${foundItem.description}\n` : ""}` +
+          `\nKitne chahiye? e.g. "2 ${foundItem.name}"`,
+      });
+    }
+
+    // ── 15. GENERIC PRICE QUERY ──────────────────────────────
+    if (["price","kitna","kitni","cost","rate","dam","daam","mehnga","sasta"].some((k) => msg.includes(k))) {
+      const suggestions = availableProducts.slice(0, 5).map((p) => `• ${p.name} — Rs.${p.price}`).join("\n");
+      return res.json({
+        reply: `Kaunse item ki price chahiye? 🤔\n\nKuch popular items:\n${suggestions}\n\nPoora menu: "menu dikhao"`,
+      });
+    }
+
+    // ── 16. FALLBACK ─────────────────────────────────────────
+    return res.json({
+      reply:
+        `Maaf kijiye, samajh nahi aaya. 🙏\n\n` +
+        `Aap yeh poochh saktay hain:\n` +
+        `• "Menu dikhao"\n` +
+        `• "Tables kitney available hain?"\n` +
+        `• "Table book karna hai"\n` +
+        `• "Delivery kaise hogi?"\n` +
+        `• "Sprite ki price"\n` +
+        `• "2 Zinger Burger ka total"\n` +
+        `• "Waiter bulao"\n` +
+        `• "Birthday event arrange karna hai"`,
+    });
+
   } catch (err) {
-    console.error(err);
-    return res.json({ reply: "Server error, please try again" });
+    console.error("Chat route error:", err);
+    return res.json({ reply: "Server error. Dobara try karein. 🙏" });
   }
 });
 

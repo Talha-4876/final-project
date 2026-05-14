@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -22,6 +23,9 @@ import chefRoutes from "./routes/chefRoutes.js";
 import adminStatsRoutes from "./routes/adminStatsRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import tableRoutes from "./routes/tableRoutes.js";
+import { router as newsletterRoutes } from "./routes/newsletterRoute.js";
+import notificationRoutes from "./routes/notificationRoutes.js"; // ✅ NEW
+
 /* MODELS */
 import Contact from "./models/Contact.js";
 import Reservation from "./models/reservationModels.js";
@@ -40,32 +44,38 @@ app.use(express.urlencoded({ extended: true }));
 /* =========================
    ROUTES
 ========================= */
-app.use("/api/auth", authRoutes);
-app.use("/api/product", productRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api/contact", contactRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/order", orderRoutes);
-app.use("/api/reservations", reservationRoutes);
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/delivery", deliveryRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/admin", adminStatsRoutes);
-app.use("/api/chefs", chefRoutes);
-app.use("/api/analytics", analyticsRoutes);
-app.use("/api/tables", tableRoutes);
+app.use("/api/auth",          authRoutes);
+app.use("/api/product",       productRoutes);
+app.use("/api/chat",          chatRoutes);
+app.use("/api/contact",       contactRoutes);
+app.use("/api/user",          userRoutes);
+app.use("/api/order",         orderRoutes);
+app.use("/api/reservations",  reservationRoutes);
+app.use("/api/reviews",       reviewRoutes);
+app.use("/api/delivery",      deliveryRoutes);
+app.use("/api/admin",         adminRoutes);
+app.use("/api/admin",         adminStatsRoutes);
+app.use("/api/chefs",         chefRoutes);
+app.use("/api/analytics",     analyticsRoutes);
+app.use("/api/tables",        tableRoutes);
+app.use("/api/newsletter",    newsletterRoutes);
+app.use("/api/notifications", notificationRoutes); // ✅ NEW
 
 /* =========================
-   NOTIFICATIONS API
+   NOTIFICATIONS API (Admin)
 ========================= */
 app.get("/api/admin/notifications", async (req, res) => {
   try {
-    const messages = await Contact.countDocuments({ isRead: false });
-    const reservations = await Reservation.countDocuments({ isPaid: false });
-    const deliveries = await Delivery.countDocuments({ status: "Pending" });
+    const { Subscriber } = await import("./routes/newsletterRoute.js");
 
-    res.json({ messages, reservations, deliveries });
+    const messages     = await Contact.countDocuments({ isRead: false });
+    const reservations = await Reservation.countDocuments({ isPaid: false });
+    const deliveries   = await Delivery.countDocuments({ status: "Pending" });
+    const subscribers  = await Subscriber.countDocuments({});
+
+    res.json({ messages, reservations, deliveries, subscribers });
   } catch (err) {
+    console.error("Notifications error:", err);
     res.status(500).json({ success: false });
   }
 });
@@ -81,7 +91,7 @@ app.get("/api/admin/reviews", async (req, res) => {
     const allReviews = products.flatMap((p) =>
       p.reviews.map((r) => ({
         ...r._doc,
-        productId: p._id,
+        productId:   p._id,
         productName: p.name,
       }))
     );
@@ -113,7 +123,6 @@ const startServer = async () => {
     app.listen(port, () => {
       console.log(`Server running on port ${port} 🚀`);
     });
-
   } catch (err) {
     console.log("Server failed ❌:", err.message);
     process.exit(1);
